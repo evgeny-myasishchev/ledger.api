@@ -1,3 +1,9 @@
+/bin
+/.go
+/.push-*
+/.container-*
+/.dockerfile-*
+
 # Binaries for programs and plugins
 *.exe
 *.dll

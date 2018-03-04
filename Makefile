@@ -19,7 +19,7 @@ BIN := ledger-api
 PKG := github.com/evgeny-myasishchev/ledger.api
 
 # Where to push the docker image.
-REGISTRY ?= thockin
+REGISTRY ?= TODO
 
 # Which architecture to build - see $(ALL_ARCH) for options.
 ARCH ?= amd64

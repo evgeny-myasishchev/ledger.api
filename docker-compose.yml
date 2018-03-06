@@ -1,0 +1,9 @@
+#
+# Compose is to bootstrap local services for dev purposes
+# 
+version: '3.2'
+services:
+  postgres:
+    image: postgres:9.6
+    ports:
+      - '5432:5432'

@@ -36,3 +36,17 @@ Some useful stuff:
 ```
 docker-compose exec postgres pg_dump -U postgres ledger-dev
 ```
+
+### Testing
+
+Use `goconvey` to automatically run tests in browser.
+
+Alternatively use [fswatch](https://github.com/emcrisostomo/fswatch)
+
+```
+fswatch -o . | xargs -n1 -I{} go test -v
+```
+
+# TODO
+
+Evaluate and integrate https://github.com/spf13/cobra

@@ -17,27 +17,21 @@ limitations under the License.
 package main
 
 import (
-	"github.com/jinzhu/gorm"
+	"github.com/gin-gonic/gin"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"ledger.api/pkg/app"
 	"ledger.api/pkg/ledgers"
 )
 
 func main() {
-	db, err := gorm.Open("postgres", "host=localhost port=5432 user=postgres dbname=ledger-dev sslmode=disable")
-	if err != nil {
-		panic(err)
-	}
+	cfg := app.GetConfig()
+	db := app.OpenGormConnection(cfg.GetString("DB_URL"))
 	defer db.Close()
-	db.LogMode(true)
 
-	db.DropTable(&ledgers.Ledger{})
-	db.AutoMigrate(&ledgers.Ledger{})
+	ledgersService := ledgers.CreateService(db)
 
-	// r := gin.Default()
-	// r.GET("/ping", func(c *gin.Context) {
-	// 	c.JSON(200, gin.H{
-	// 		"message": "pong",
-	// 	})
-	// })
-	// r.Run() // listen and serve on 0.0.0.0:8080
+	r := gin.Default()
+	ledgers.RegisterRoutes(r, &ledgersService)
+	app.RegisterRoutes(r)
+	r.Run() // listen and serve on 0.0.0.0:8080
 }

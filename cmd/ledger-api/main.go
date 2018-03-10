@@ -17,6 +17,8 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"ledger.api/pkg/app"
@@ -33,5 +35,5 @@ func main() {
 	r := gin.Default()
 	ledgers.RegisterRoutes(r, &ledgersService)
 	app.RegisterRoutes(r)
-	r.Run() // listen and serve on 0.0.0.0:8080
+	r.Run(fmt.Sprintf(":%v", cfg.GetInt("PORT")))
 }

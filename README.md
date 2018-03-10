@@ -1,6 +1,13 @@
 # ledger.api
 Ledger API layer
 
+# Config
+
+Env vars:
+
+* DB_URL - Postgres db url, defaults to: `host=localhost port=5432 user=postgres dbname=ledger-dev sslmode=disable`
+* PORT - Port to listen on, defaults to 3000
+
 # Dev
 
 Repo skeleton taken from (here)[https://github.com/thockin/go-build-template]

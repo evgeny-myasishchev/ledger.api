@@ -2,7 +2,7 @@ package ledgers
 
 import "github.com/gin-gonic/gin"
 
-// Register - Register ledger related routes
-func RegisterRoutes(router *gin.Engine, ledgerService *Service) {
+// Routes - Register ledger related routes
+func Routes(router *gin.Engine, ledgerService *Service) {
 
 }

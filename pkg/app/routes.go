@@ -1,10 +1,10 @@
 package app
 
-import "github.com/gin-gonic/gin"
+import "ledger.api/pkg/server"
 
-// RegisterRoutes - Register app routes
-func RegisterRoutes(router *gin.Engine) {
-	router.GET("/v1/healthcheck/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "pong"})
+// Routes - Register app routes
+func Routes(router server.Router) {
+	router.GET("/v1/healthcheck/ping", func(c server.Context) {
+		c.JSON(200, server.JSON{"message": "pong"})
 	})
 }

@@ -1,12 +1,9 @@
 package main
 
 import (
-	"fmt"
-
-	"github.com/gin-gonic/gin"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"ledger.api/pkg/app"
-	"ledger.api/pkg/ledgers"
+	"ledger.api/pkg/server"
 )
 
 func main() {
@@ -14,10 +11,10 @@ func main() {
 	db := app.OpenGormConnection(cfg.GetString("DB_URL"))
 	defer db.Close()
 
-	ledgersService := ledgers.CreateService(db)
+	// ledgersService := ledgers.CreateService(db)
 
-	r := gin.Default()
-	ledgers.RegisterRoutes(r, &ledgersService)
-	app.RegisterRoutes(r)
-	r.Run(fmt.Sprintf(":%v", cfg.GetInt("PORT")))
+	router := server.
+		CreateDefaultRouter().
+		RegisterRoutes(app.Routes)
+	router.Run(cfg.GetInt("PORT"))
 }

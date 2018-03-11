@@ -1,3 +1,6 @@
+.tags
+.tags_swap
+
 /bin
 /.go
 /.push-*

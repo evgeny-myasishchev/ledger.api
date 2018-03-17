@@ -19,6 +19,7 @@ type HandlerFunc func(Context)
 // Router - generic router interface
 type Router interface {
 	GET(relativePath string, handlers HandlerFunc) Router
+	POST(relativePath string, handlers HandlerFunc) Router
 
 	RegisterRoutes(routes Routes) Router
 

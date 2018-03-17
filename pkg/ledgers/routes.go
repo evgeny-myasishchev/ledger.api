@@ -1,8 +1,16 @@
 package ledgers
 
-import "github.com/gin-gonic/gin"
+import (
+	"ledger.api/pkg/server"
+)
 
 // Routes - Register ledger related routes
-func Routes(router *gin.Engine, ledgerService *Service) {
+func Routes(router server.Router) {
+	router.GET("/v2/ledgers", func(c server.Context) {
+		c.JSON(200, server.JSON{})
+	})
 
+	router.POST("/v2/ledgers", func(c server.Context) {
+		c.JSON(200, server.JSON{})
+	})
 }

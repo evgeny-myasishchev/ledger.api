@@ -32,6 +32,13 @@ func (r *ginRouter) GET(relativePath string, handler HandlerFunc) Router {
 	return r
 }
 
+func (r *ginRouter) POST(relativePath string, handler HandlerFunc) Router {
+	r.engine.POST(relativePath, func(c *gin.Context) {
+		handler(&ginContext{target: c})
+	})
+	return r
+}
+
 func (r *ginRouter) Run(port int) {
 	err := r.engine.Run(fmt.Sprintf(":%v", port))
 	if err != nil {

@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -17,20 +18,60 @@ func TestRoute(t *testing.T) {
 		recorder := httptest.NewRecorder()
 
 		Convey("When registering routes", func() {
-
 			router.RegisterRoutes(func(r Router) {
-				r.GET("/v1/some-resource", func(c Context) {
-					c.JSON(200, JSON{"fake": "string"})
+				r.GET("/v1/some-resource", func(c Context) (*Response, error) {
+					return c.R(JSON{"fake": "string"}), nil
+				})
+				r.GET("/v1/some-resource/503", func(c Context) (*Response, error) {
+					return c.R(JSON{"fake": "string"}).S(503), nil
 				})
 			})
 
-			req, _ := http.NewRequest("GET", "/v1/some-resource", nil)
-			router.ServeHTTP(recorder, req)
-
 			Convey("It should invoke provided handler", func() {
+				req, _ := http.NewRequest("GET", "/v1/some-resource", nil)
+				router.ServeHTTP(recorder, req)
+
 				So(recorder.Code, ShouldEqual, 200)
 				expectedMessage, _ := json.Marshal(gin.H{"fake": "string"})
 				So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
+			})
+
+			Convey("It set custom status code", func() {
+				req, _ := http.NewRequest("GET", "/v1/some-resource/503", nil)
+				router.ServeHTTP(recorder, req)
+
+				So(recorder.Code, ShouldEqual, 503)
+				expectedMessage, _ := json.Marshal(gin.H{"fake": "string"})
+				So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
+			})
+		})
+
+		Convey("When handler returns error", func() {
+
+			Convey("Given standard error", func() {
+				router.RegisterRoutes(func(r Router) {
+					r.GET("/v1/fail-with-default-error", func(c Context) (*Response, error) {
+						return nil, errors.New("Something went very wrong")
+					})
+				})
+				req, _ := http.NewRequest("GET", "/v1/fail-with-default-error", nil)
+				router.ServeHTTP(recorder, req)
+
+				Convey("It should respond with default status code", func() {
+					So(recorder.Code, ShouldEqual, 500)
+				})
+
+				Convey("It should return default error response structure", func() {
+					expectedMessage, _ := json.Marshal(JSON{
+						"errors": []JSON{
+							{
+								"status": http.StatusInternalServerError,
+								"title":  http.StatusText(http.StatusInternalServerError),
+							},
+						},
+					})
+					So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
+				})
 			})
 		})
 	})

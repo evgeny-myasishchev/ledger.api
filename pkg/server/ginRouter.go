@@ -5,15 +5,14 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/render"
 )
 
 type ginContext struct {
-	target *gin.Context
 }
 
-func (c *ginContext) JSON(code int, obj interface{}) {
-	c.target.Render(code, render.JSON{Data: obj})
+func (c *ginContext) R(obj JSON) *Response {
+	r := &Response{status: 200, json: obj}
+	return r
 }
 
 type ginRouter struct {
@@ -25,18 +24,33 @@ func (r *ginRouter) RegisterRoutes(routes Routes) Router {
 	return r
 }
 
-func (r *ginRouter) GET(relativePath string, handler HandlerFunc) Router {
-	r.engine.GET(relativePath, func(c *gin.Context) {
-		handler(&ginContext{target: c})
+func (r *ginRouter) handle(httpMethod string, relativePath string, handler HandlerFunc) Router {
+	r.engine.Handle(httpMethod, relativePath, func(c *gin.Context) {
+		res, err := handler(&ginContext{})
+		if err != nil {
+			// TODO: Logging here
+			// TODO: HttpErrors
+			c.JSON(500, JSON{
+				"errors": []JSON{
+					{
+						"status": http.StatusInternalServerError,
+						"title":  http.StatusText(http.StatusInternalServerError),
+					},
+				},
+			})
+		} else {
+			c.JSON(res.status, res.json)
+		}
 	})
 	return r
 }
 
+func (r *ginRouter) GET(relativePath string, handler HandlerFunc) Router {
+	return r.handle("GET", relativePath, handler)
+}
+
 func (r *ginRouter) POST(relativePath string, handler HandlerFunc) Router {
-	r.engine.POST(relativePath, func(c *gin.Context) {
-		handler(&ginContext{target: c})
-	})
-	return r
+	return r.handle("POST", relativePath, handler)
 }
 
 func (r *ginRouter) Run(port int) {

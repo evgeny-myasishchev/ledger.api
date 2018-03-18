@@ -16,7 +16,7 @@ import (
 func TestRoute(t *testing.T) {
 
 	Convey("Given router", t, func() {
-		router := CreateNewRouter()
+		router := CreateTestRouter()
 		recorder := httptest.NewRecorder()
 
 		Convey("When registering routes", func() {

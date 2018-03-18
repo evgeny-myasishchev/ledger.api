@@ -2,10 +2,10 @@ package server
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"ledger.api/pkg/logging"
 )
 
 type ginContext struct {
@@ -28,8 +28,6 @@ func (r *ginRouter) RegisterRoutes(routes Routes) Router {
 func (r *ginRouter) handle(httpMethod string, relativePath string, handler HandlerFunc) Router {
 	r.engine.Handle(httpMethod, relativePath, func(c *gin.Context) {
 		res, err := handler(&ginContext{})
-		log.Println("Got error")
-		log.Println(err)
 		if err != nil {
 
 			httpErr, ok := err.(HTTPError)
@@ -76,9 +74,14 @@ func CreateDefaultRouter() Router {
 	return &router
 }
 
-// CreateNewRouter - Create new router without any middleware and logging
-func CreateNewRouter() Router {
+// CreateTestRouter - Create new router that can be used for tests
+func CreateTestRouter() Router {
+	logger := logging.NewTestLogger()
+	logger.Debug("Initializing test router")
+	gin.DisableConsoleColor()
+	gin.SetMode(gin.TestMode)
 	ginEngine := gin.New()
+	ginEngine.Use(LoggingMiddleware(logger))
 	router := ginRouter{
 		engine: ginEngine,
 	}

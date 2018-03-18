@@ -51,7 +51,10 @@ Use `goconvey` to automatically run tests in browser.
 Alternatively use [fswatch](https://github.com/emcrisostomo/fswatch)
 
 ```
-fswatch -o . | xargs -n1 -I{} go test -v
+fswatch --filter-from .fswatch -o . | xargs -n1 -I{} go test -v
+
+# Or specific package
+fswatch --filter-from .fswatch -o . | xargs -n1 -I{} go test ./pkg/server/... -v
 ```
 
 # TODO

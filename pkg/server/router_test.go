@@ -3,11 +3,13 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/icrowley/fake"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -67,6 +69,35 @@ func TestRoute(t *testing.T) {
 							{
 								"status": http.StatusInternalServerError,
 								"title":  http.StatusText(http.StatusInternalServerError),
+							},
+						},
+					})
+					So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
+				})
+			})
+
+			Convey("Given http error", func() {
+				httpErr := HTTPError{status: rand.Intn(600), title: fake.Sentence()}
+
+				router.RegisterRoutes(func(r Router) {
+					r.GET("/v1/fail-with-http-error", func(c Context) (*Response, error) {
+						return nil, httpErr
+					})
+				})
+
+				req, _ := http.NewRequest("GET", "/v1/fail-with-http-error", nil)
+				router.ServeHTTP(recorder, req)
+
+				Convey("It should respond with err status code", func() {
+					So(recorder.Code, ShouldEqual, httpErr.status)
+				})
+
+				Convey("It should return error response structure", func() {
+					expectedMessage, _ := json.Marshal(JSON{
+						"errors": []JSON{
+							{
+								"status": httpErr.status,
+								"title":  httpErr.title,
 							},
 						},
 					})

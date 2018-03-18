@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -27,17 +28,19 @@ func (r *ginRouter) RegisterRoutes(routes Routes) Router {
 func (r *ginRouter) handle(httpMethod string, relativePath string, handler HandlerFunc) Router {
 	r.engine.Handle(httpMethod, relativePath, func(c *gin.Context) {
 		res, err := handler(&ginContext{})
+		log.Println("Got error")
+		log.Println(err)
 		if err != nil {
+
+			httpErr, ok := err.(HTTPError)
+			if !ok {
+				httpErr = HTTPError{
+					status: http.StatusInternalServerError,
+					title:  http.StatusText(http.StatusInternalServerError),
+				}
+			}
 			// TODO: Logging here
-			// TODO: HttpErrors
-			c.JSON(500, JSON{
-				"errors": []JSON{
-					{
-						"status": http.StatusInternalServerError,
-						"title":  http.StatusText(http.StatusInternalServerError),
-					},
-				},
-			})
+			c.JSON(httpErr.status, httpErr.JSON())
 		} else {
 			c.JSON(res.status, res.json)
 		}

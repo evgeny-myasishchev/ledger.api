@@ -13,7 +13,6 @@ func LoggingMiddleware(logger logging.Logger) gin.HandlerFunc {
 		method := c.Request.Method
 		path := c.Request.URL.Path
 
-		println(path)
 		logger.
 			// TODO: Optionally: headers, query
 			WithFields(logging.Fields{

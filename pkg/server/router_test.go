@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"math/rand"
@@ -103,6 +104,42 @@ func TestRoute(t *testing.T) {
 					})
 					So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
 				})
+			})
+		})
+
+		Convey("When request body is submitted", func() {
+			// Binding from JSON
+			type Person struct {
+				FirstName string `json:"firstName" binding:"required"`
+				LastName  string `json:"lastName" binding:"required"`
+			}
+
+			fakePerson := Person{
+				FirstName: fake.FirstName(),
+				LastName:  fake.LastName(),
+			}
+
+			var receivedPerson Person
+			router.RegisterRoutes(func(r Router) {
+				r.POST("/v1/persons", func(c Context) (*Response, error) {
+					err := c.Bind(&receivedPerson)
+					return c.R(nil), err
+				})
+			})
+
+			Convey("It should bind the model data", func() {
+				data, err := json.Marshal(fakePerson)
+				if err != nil {
+					panic(err)
+				}
+
+				req, _ := http.NewRequest("POST", "/v1/persons", bytes.NewReader(data))
+				router.ServeHTTP(recorder, req)
+				So(receivedPerson, ShouldResemble, fakePerson)
+			})
+
+			Convey("It should return validation error", func() {
+
 			})
 		})
 	})

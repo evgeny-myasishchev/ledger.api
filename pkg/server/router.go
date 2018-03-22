@@ -8,6 +8,7 @@ type JSON map[string]interface{}
 // Context - http context interface
 type Context interface {
 	R(json JSON) *Response
+	Bind(obj interface{}) error
 }
 
 // Routes - function to register routes

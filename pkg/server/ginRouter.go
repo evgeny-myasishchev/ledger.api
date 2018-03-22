@@ -5,15 +5,26 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"ledger.api/pkg/logging"
 )
 
 type ginContext struct {
+	target *gin.Context
 }
 
 func (c *ginContext) R(obj JSON) *Response {
 	r := &Response{status: 200, json: obj}
 	return r
+}
+
+func (c *ginContext) Bind(obj interface{}) error {
+	contentType := c.target.ContentType()
+	if contentType == "" {
+		contentType = "application/json"
+	}
+	b := binding.Default(c.target.Request.Method, contentType)
+	return c.target.ShouldBindWith(obj, b)
 }
 
 type ginRouter struct {
@@ -27,7 +38,7 @@ func (r *ginRouter) RegisterRoutes(routes Routes) Router {
 
 func (r *ginRouter) handle(httpMethod string, relativePath string, handler HandlerFunc) Router {
 	r.engine.Handle(httpMethod, relativePath, func(c *gin.Context) {
-		res, err := handler(&ginContext{})
+		res, err := handler(&ginContext{target: c})
 		if err != nil {
 
 			httpErr, ok := err.(HTTPError)

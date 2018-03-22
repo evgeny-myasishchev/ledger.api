@@ -36,6 +36,12 @@
   version = "v1.0.0"
 
 [[projects]]
+  name = "github.com/google/jsonapi"
+  packages = ["."]
+  revision = "46d3ced0434461be12e555852e2f1a9ed382e139"
+  version = "1.0.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/gopherjs/gopherjs"
   packages = ["js"]
@@ -232,6 +238,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a107f38badcbd74c288b97657a95598b4fc67795386980c8f75ff654eb2a0494"
+  inputs-digest = "b2dc47055d3e81401fe48b7ca30d9dd53cfa2ee0e8ab6de70c44108024add2e6"
   solver-name = "gps-cdcl"
   solver-version = 1

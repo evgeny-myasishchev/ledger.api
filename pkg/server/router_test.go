@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/jsonapi"
 	"github.com/icrowley/fake"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -108,13 +109,14 @@ func TestRoute(t *testing.T) {
 		})
 
 		Convey("When request body is submitted", func() {
-			// Binding from JSON
 			type Person struct {
-				FirstName string `json:"firstName" binding:"required"`
-				LastName  string `json:"lastName" binding:"required"`
+				ID        int    `jsonapi:"primary,persons"`
+				FirstName string `jsonapi:"attr,firstName"`
+				LastName  string `jsonapi:"attr,lastName"`
 			}
 
 			fakePerson := Person{
+				ID:        10,
 				FirstName: fake.FirstName(),
 				LastName:  fake.LastName(),
 			}
@@ -127,13 +129,13 @@ func TestRoute(t *testing.T) {
 				})
 			})
 
-			Convey("It should bind the model data", func() {
-				data, err := json.Marshal(fakePerson)
-				if err != nil {
+			Convey("It should bind the model data in jsonapi format", func() {
+				data := bytes.NewBuffer(nil)
+				if err := jsonapi.MarshalPayload(data, &fakePerson); err != nil {
 					panic(err)
 				}
 
-				req, _ := http.NewRequest("POST", "/v1/persons", bytes.NewReader(data))
+				req, _ := http.NewRequest("POST", "/v1/persons", data)
 				router.ServeHTTP(recorder, req)
 				So(receivedPerson, ShouldResemble, fakePerson)
 			})

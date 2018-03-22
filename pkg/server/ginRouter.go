@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
+	"github.com/google/jsonapi"
 	"ledger.api/pkg/logging"
 )
 
@@ -19,12 +19,7 @@ func (c *ginContext) R(obj JSON) *Response {
 }
 
 func (c *ginContext) Bind(obj interface{}) error {
-	contentType := c.target.ContentType()
-	if contentType == "" {
-		contentType = "application/json"
-	}
-	b := binding.Default(c.target.Request.Method, contentType)
-	return c.target.ShouldBindWith(obj, b)
+	return jsonapi.UnmarshalPayload(c.target.Request.Body, obj)
 }
 
 type ginRouter struct {

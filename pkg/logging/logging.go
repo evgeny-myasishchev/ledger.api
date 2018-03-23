@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Fields - represents fields structure
 type Fields map[string]interface{}
 
 // Logger - logger interface
@@ -24,6 +25,7 @@ type Logger interface {
 	Debugf(format string, args ...interface{})
 	Debug(args ...interface{})
 
+	WithError(err error) Logger
 	WithField(key string, value interface{}) Logger
 	WithFields(fields Fields) Logger
 }
@@ -31,6 +33,15 @@ type Logger interface {
 type logrusLogger struct {
 	target *logrus.Logger
 	entry  *logrus.Entry
+}
+
+func (logger *logrusLogger) WithError(err error) Logger {
+	entry := logger.target.WithError(err)
+	childLogger := &logrusLogger{
+		target: logger.target,
+		entry:  entry,
+	}
+	return childLogger
 }
 
 func (logger *logrusLogger) WithField(key string, value interface{}) Logger {
@@ -59,7 +70,11 @@ func (logger *logrusLogger) Errorf(format string, args ...interface{}) {
 	}
 }
 func (logger *logrusLogger) Error(args ...interface{}) {
-	logger.target.Error(args)
+	if logger.entry != nil {
+		logger.entry.Error(args...)
+	} else {
+		logger.target.Error(args...)
+	}
 }
 
 func (logger *logrusLogger) Warnf(format string, args ...interface{}) {
@@ -77,14 +92,26 @@ func (logger *logrusLogger) Infof(format string, args ...interface{}) {
 	}
 }
 func (logger *logrusLogger) Info(args ...interface{}) {
-	logger.target.Info(args)
+	if logger.entry != nil {
+		logger.entry.Info(args...)
+	} else {
+		logger.target.Info(args...)
+	}
 }
 
 func (logger *logrusLogger) Debugf(format string, args ...interface{}) {
-	logger.target.Debugf(format, args...)
+	if logger.entry != nil {
+		logger.entry.Debugf(format, args...)
+	} else {
+		logger.target.Debugf(format, args...)
+	}
 }
 func (logger *logrusLogger) Debug(args ...interface{}) {
-	logger.target.Debug(args)
+	if logger.entry != nil {
+		logger.entry.Debug(args...)
+	} else {
+		logger.target.Debug(args...)
+	}
 }
 
 func (logger *logrusLogger) Writer() *io.PipeWriter {

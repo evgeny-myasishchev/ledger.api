@@ -60,3 +60,7 @@
 [[constraint]]
   name = "github.com/google/jsonapi"
   version = "1.0.0"
+
+[[constraint]]
+  name = "gopkg.in/go-playground/validator.v9"
+  version = "9.13.0"

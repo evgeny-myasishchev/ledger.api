@@ -1,6 +1,10 @@
 package server
 
-import "net/http"
+import (
+	"net/http"
+
+	"ledger.api/pkg/logging"
+)
 
 // JSON is a shortcup for map[string]interface{}
 type JSON map[string]interface{}
@@ -9,6 +13,7 @@ type JSON map[string]interface{}
 type Context interface {
 	R(json JSON) *Response
 	Bind(obj interface{}) error
+	Logger() logging.Logger
 }
 
 // Routes - function to register routes

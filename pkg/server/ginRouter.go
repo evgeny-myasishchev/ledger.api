@@ -6,11 +6,18 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/jsonapi"
+	validator "gopkg.in/go-playground/validator.v9"
 	"ledger.api/pkg/logging"
 )
 
 type ginContext struct {
-	target *gin.Context
+	target   *gin.Context
+	validate *validator.Validate
+	logger   logging.Logger
+}
+
+func (c *ginContext) Logger() logging.Logger {
+	return c.logger
 }
 
 func (c *ginContext) R(obj JSON) *Response {
@@ -19,11 +26,18 @@ func (c *ginContext) R(obj JSON) *Response {
 }
 
 func (c *ginContext) Bind(obj interface{}) error {
-	return jsonapi.UnmarshalPayload(c.target.Request.Body, obj)
+	err := jsonapi.UnmarshalPayload(c.target.Request.Body, obj)
+	if err != nil {
+		return err
+	}
+
+	return c.validate.Struct(obj)
 }
 
 type ginRouter struct {
-	engine *gin.Engine
+	engine   *gin.Engine
+	logger   logging.Logger
+	validate *validator.Validate
 }
 
 func (r *ginRouter) RegisterRoutes(routes Routes) Router {
@@ -33,9 +47,13 @@ func (r *ginRouter) RegisterRoutes(routes Routes) Router {
 
 func (r *ginRouter) handle(httpMethod string, relativePath string, handler HandlerFunc) Router {
 	r.engine.Handle(httpMethod, relativePath, func(c *gin.Context) {
-		res, err := handler(&ginContext{target: c})
+		res, err := handler(&ginContext{
+			target:   c,
+			validate: r.validate,
+			logger:   r.logger, //TODO: Child logger with RequestID
+		})
 		if err != nil {
-
+			r.logger.WithError(err).Error("Failed to process request")
 			httpErr, ok := err.(HTTPError)
 			if !ok {
 				httpErr = HTTPError{
@@ -43,7 +61,6 @@ func (r *ginRouter) handle(httpMethod string, relativePath string, handler Handl
 					title:  http.StatusText(http.StatusInternalServerError),
 				}
 			}
-			// TODO: Logging here
 			c.JSON(httpErr.status, httpErr.JSON())
 		} else {
 			c.JSON(res.status, res.json)
@@ -89,7 +106,9 @@ func CreateTestRouter() Router {
 	ginEngine := gin.New()
 	ginEngine.Use(LoggingMiddleware(logger))
 	router := ginRouter{
-		engine: ginEngine,
+		engine:   ginEngine,
+		logger:   logger,
+		validate: validator.New(),
 	}
 	return &router
 }

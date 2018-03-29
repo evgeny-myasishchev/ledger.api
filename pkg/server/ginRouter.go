@@ -56,12 +56,16 @@ func (r *ginRouter) handle(httpMethod string, relativePath string, handler Handl
 			r.logger.WithError(err).Error("Failed to process request")
 			httpErr, ok := err.(HTTPError)
 			if !ok {
-				httpErr = HTTPError{
-					status: http.StatusInternalServerError,
-					title:  http.StatusText(http.StatusInternalServerError),
-				}
+				httpErr = *InternalServerError()
 			}
-			c.JSON(httpErr.status, httpErr.JSON())
+			validationErr, ok := err.(validator.ValidationErrors)
+			if ok {
+				httpErr = *BuildHTTPErrorFromValidationError(&validationErr)
+			}
+			c.Status(httpErr.Status)
+			if err := httpErr.MarshalErrors(c.Writer); err != nil {
+				panic(err)
+			}
 		} else {
 			c.JSON(res.status, res.json)
 		}

@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -21,7 +22,7 @@ func TestRoute(t *testing.T) {
 		router := CreateTestRouter()
 		recorder := httptest.NewRecorder()
 
-		SkipConvey("When registering routes", func() {
+		Convey("When registering routes", func() {
 			router.RegisterRoutes(func(r Router) {
 				r.GET("/v1/some-resource", func(c Context) (*Response, error) {
 					return c.R(JSON{"fake": "string"}), nil
@@ -50,7 +51,7 @@ func TestRoute(t *testing.T) {
 			})
 		})
 
-		SkipConvey("When handler returns error", func() {
+		Convey("When handler returns error", func() {
 
 			Convey("Given standard error", func() {
 				router.RegisterRoutes(func(r Router) {
@@ -66,20 +67,32 @@ func TestRoute(t *testing.T) {
 				})
 
 				Convey("It should return default error response structure", func() {
-					expectedMessage, _ := json.Marshal(JSON{
-						"errors": []JSON{
-							{
-								"status": http.StatusInternalServerError,
+					expectedMessage := map[string]interface{}{
+						"errors": []interface{}{
+							map[string]interface{}{
+								"status": strconv.Itoa(http.StatusInternalServerError),
 								"title":  http.StatusText(http.StatusInternalServerError),
 							},
 						},
-					})
-					So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
+					}
+					var actualMessage map[string]interface{}
+					if err := json.Unmarshal(recorder.Body.Bytes(), &actualMessage); err != nil {
+						panic(err)
+					}
+					So(actualMessage, ShouldResemble, expectedMessage)
 				})
 			})
 
 			Convey("Given http error", func() {
-				httpErr := HTTPError{status: rand.Intn(600), title: fake.Sentence()}
+				httpErr := HTTPError{
+					Status: rand.Intn(600),
+					Errors: []*jsonapi.ErrorObject{
+						{
+							Status: strconv.Itoa(rand.Intn(500)),
+							Title:  fake.Sentence(),
+						},
+					},
+				}
 
 				router.RegisterRoutes(func(r Router) {
 					r.GET("/v1/fail-with-http-error", func(c Context) (*Response, error) {
@@ -91,19 +104,23 @@ func TestRoute(t *testing.T) {
 				router.ServeHTTP(recorder, req)
 
 				Convey("It should respond with err status code", func() {
-					So(recorder.Code, ShouldEqual, httpErr.status)
+					So(recorder.Code, ShouldEqual, httpErr.Status)
 				})
 
 				Convey("It should return error response structure", func() {
-					expectedMessage, _ := json.Marshal(JSON{
-						"errors": []JSON{
-							{
-								"status": httpErr.status,
-								"title":  httpErr.title,
+					expectedMessage := map[string]interface{}{
+						"errors": []interface{}{
+							map[string]interface{}{
+								"status": httpErr.Errors[0].Status,
+								"title":  httpErr.Errors[0].Title,
 							},
 						},
-					})
-					So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
+					}
+					var actualMessage map[string]interface{}
+					if err := json.Unmarshal(recorder.Body.Bytes(), &actualMessage); err != nil {
+						panic(err)
+					}
+					So(actualMessage, ShouldResemble, expectedMessage)
 				})
 			})
 		})
@@ -123,7 +140,7 @@ func TestRoute(t *testing.T) {
 			})
 		})
 
-		SkipConvey("When valid request body is submitted", func() {
+		Convey("When valid request body is submitted", func() {
 			validPerson := Person{
 				ID:        10,
 				FirstName: fake.FirstName(),
@@ -147,7 +164,7 @@ func TestRoute(t *testing.T) {
 			})
 		})
 
-		SkipConvey("When corrupted request body is submitted", func() {
+		Convey("When corrupted request body is submitted", func() {
 			req, _ := http.NewRequest("POST", "/v1/persons", bytes.NewBufferString("Some crap"))
 			router.ServeHTTP(recorder, req)
 
@@ -156,15 +173,20 @@ func TestRoute(t *testing.T) {
 			})
 
 			Convey("It should include standard 500 error details", func() {
-				expectedMessage, _ := json.Marshal(JSON{
-					"errors": []JSON{
-						{
-							"status": 500,
+				expectedMessage := map[string]interface{}{
+					"errors": []interface{}{
+						map[string]interface{}{
+							"status": "500",
 							"title":  "Internal Server Error",
 						},
 					},
-				})
-				So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
+				}
+				var actualMessage map[string]interface{}
+				if err := json.Unmarshal(recorder.Body.Bytes(), &actualMessage); err != nil {
+					panic(err)
+				}
+
+				So(actualMessage, ShouldResemble, expectedMessage)
 			})
 		})
 
@@ -186,19 +208,25 @@ func TestRoute(t *testing.T) {
 			})
 
 			Convey("It should respond with error details", func() {
-				expectedMessage, _ := json.Marshal(JSON{
-					"errors": []JSON{
-						{
-							"status": 400,
-							"title":  "FirstName is required",
+				expectedMessage := map[string]interface{}{
+					"errors": []interface{}{
+						map[string]interface{}{
+							"status": "400",
+							"title":  "Validation error",
+							"detail": "Field 'Person.FirstName' validation failed on 'required' tag",
 						},
-						{
-							"status": 400,
-							"title":  "LastName is required",
+						map[string]interface{}{
+							"status": "400",
+							"title":  "Validation error",
+							"detail": "Field 'Person.LastName' validation failed on 'required' tag",
 						},
 					},
-				})
-				So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
+				}
+				var actualMessage map[string]interface{}
+				if err := json.Unmarshal(recorder.Body.Bytes(), &actualMessage); err != nil {
+					panic(err)
+				}
+				So(actualMessage, ShouldResemble, expectedMessage)
 			})
 		})
 	})

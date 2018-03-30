@@ -6,14 +6,13 @@ import (
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
-	"ledger.api/pkg/ledgers"
 	"ledger.api/pkg/server"
 )
 
 func TestRoutes(t *testing.T) {
 	router := server.
-		CreateNewRouter().
-		RegisterRoutes(ledgers.Routes)
+		CreateTestRouter().
+		RegisterRoutes(Routes)
 	Convey("Given ledger routes", t, func() {
 		recorder := httptest.NewRecorder()
 		Convey("When route is POST create", func() {

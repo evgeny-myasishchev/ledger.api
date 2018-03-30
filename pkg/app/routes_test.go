@@ -8,14 +8,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	. "github.com/smartystreets/goconvey/convey"
-	"ledger.api/pkg/app"
 	"ledger.api/pkg/server"
 )
 
 func TestRoutes(t *testing.T) {
 	router := server.
-		CreateNewRouter().
-		RegisterRoutes(app.Routes)
+		CreateTestRouter().
+		RegisterRoutes(Routes)
 	Convey("Given app routes", t, func() {
 		recorder := httptest.NewRecorder()
 		Convey("When route is healthcheck", func() {

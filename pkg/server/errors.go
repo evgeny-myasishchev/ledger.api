@@ -52,8 +52,6 @@ func BuildHTTPErrorFromValidationError(validationErrors *validator.ValidationErr
 			Title:  "Validation error",
 			Detail: fmt.Sprintf(validationErrDetailsMsg, fe.Namespace(), fe.Tag()),
 		}
-
-		// TODO: Fill the array with errors structure
 	}
 
 	return &err

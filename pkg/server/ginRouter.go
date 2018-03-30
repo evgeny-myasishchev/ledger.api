@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/jsonapi"
@@ -46,6 +47,7 @@ func (r *ginRouter) RegisterRoutes(routes Routes) Router {
 }
 
 func (r *ginRouter) handle(httpMethod string, relativePath string, handler HandlerFunc) Router {
+	r.logger.Debugf("Registering route: %v %v", httpMethod, relativePath)
 	r.engine.Handle(httpMethod, relativePath, func(c *gin.Context) {
 		res, err := handler(&ginContext{
 			target:   c,
@@ -82,6 +84,7 @@ func (r *ginRouter) POST(relativePath string, handler HandlerFunc) Router {
 }
 
 func (r *ginRouter) Run(port int) {
+	r.logger.Infof("Starting server on port: %v", port)
 	err := r.engine.Run(fmt.Sprintf(":%v", port))
 	if err != nil {
 		panic(err)
@@ -92,13 +95,13 @@ func (r *ginRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.engine.ServeHTTP(w, req)
 }
 
-// CreateDefaultRouter - Create default router with middlewares and logging
-func CreateDefaultRouter() Router {
-	ginEngine := gin.Default()
-	router := ginRouter{
-		engine: ginEngine,
-	}
-	return &router
+// CreateDevRouter - Create router for dev env
+func CreateDevRouter() Router {
+	logger := logging.NewPrettyLogger(os.Stderr)
+	logger.Debug("Initializing dev router")
+	gin.DisableConsoleColor()
+	gin.SetMode(gin.TestMode)
+	return createRouter(logger)
 }
 
 // CreateTestRouter - Create new router that can be used for tests
@@ -107,6 +110,10 @@ func CreateTestRouter() Router {
 	logger.Debug("Initializing test router")
 	gin.DisableConsoleColor()
 	gin.SetMode(gin.TestMode)
+	return createRouter(logger)
+}
+
+func createRouter(logger logging.Logger) Router {
 	ginEngine := gin.New()
 	ginEngine.Use(LoggingMiddleware(logger))
 	router := ginRouter{

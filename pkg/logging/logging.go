@@ -134,12 +134,19 @@ func NewTestLogger() Logger {
 	if err != nil {
 		panic(err)
 	}
+
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 	if err != nil {
 		panic(err)
 	}
+
+	return NewPrettyLogger(file)
+}
+
+// NewPrettyLogger - Creates a new instance of a logger that will pretty write
+func NewPrettyLogger(out io.Writer) Logger {
 	target := logrus.Logger{
-		Out:       file,
+		Out:       out,
 		Formatter: new(logrus.TextFormatter),
 		Hooks:     make(logrus.LevelHooks),
 		Level:     logrus.DebugLevel,

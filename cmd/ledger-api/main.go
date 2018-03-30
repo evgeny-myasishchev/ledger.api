@@ -14,7 +14,7 @@ func main() {
 	// ledgersService := ledgers.CreateService(db)
 
 	router := server.
-		CreateDefaultRouter().
+		CreateDevRouter().
 		RegisterRoutes(app.Routes)
 	router.Run(cfg.GetInt("PORT"))
 }

@@ -51,6 +51,30 @@ func TestRoute(t *testing.T) {
 			})
 		})
 
+		Convey("When request to unknown route", func() {
+			req, _ := http.NewRequest("GET", "/v1/some-resource", nil)
+			router.ServeHTTP(recorder, req)
+
+			Convey("It should respond 404 status", func() {
+				So(recorder.Code, ShouldEqual, 404)
+			})
+			Convey("It should respond with consistent error body", func() {
+				expectedMessage := map[string]interface{}{
+					"errors": []interface{}{
+						map[string]interface{}{
+							"status": strconv.Itoa(http.StatusNotFound),
+							"title":  http.StatusText(http.StatusNotFound),
+						},
+					},
+				}
+				var actualMessage map[string]interface{}
+				if err := json.Unmarshal(recorder.Body.Bytes(), &actualMessage); err != nil {
+					panic(err)
+				}
+				So(actualMessage, ShouldResemble, expectedMessage)
+			})
+		})
+
 		Convey("When handler returns error", func() {
 
 			Convey("Given standard error", func() {

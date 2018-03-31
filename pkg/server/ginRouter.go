@@ -113,6 +113,10 @@ func CreateTestRouter() Router {
 	return createRouter(logger)
 }
 
+const noRouteErrFmt = `{ "errors": [ { "status": "%v", "title": "%v" } ] }`
+
+var noRouteErrorBody = []byte(fmt.Sprintf(noRouteErrFmt, http.StatusNotFound, http.StatusText(http.StatusNotFound)))
+
 func createRouter(logger logging.Logger) Router {
 	ginEngine := gin.New()
 	ginEngine.Use(LoggingMiddleware(logger))
@@ -121,5 +125,10 @@ func createRouter(logger logging.Logger) Router {
 		logger:   logger,
 		validate: validator.New(),
 	}
+
+	ginEngine.NoRoute(func(c *gin.Context) {
+		c.Status(http.StatusNotFound)
+		c.Writer.Write(noRouteErrorBody)
+	})
 	return &router
 }

@@ -1,13 +1,16 @@
 package ledgers
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
 	"github.com/icrowley/fake"
 	"github.com/jinzhu/gorm"
+	uuid "github.com/satori/go.uuid"
 	. "github.com/smartystreets/goconvey/convey"
 	"ledger.api/pkg/app"
+	"ledger.api/pkg/users"
 )
 
 var DB *gorm.DB
@@ -23,22 +26,36 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func randomLedger() *Ledger {
-	l := Ledger{
-		Name:          fake.Brand(),
-		CreatedUserID: fake.Characters(),
+func randomUser() *users.User {
+	u := users.User{
+		ID: fmt.Sprintf("user-%v", fake.Word()),
+	}
+	return &u
+}
+
+func randomNewLedger() *NewLedger {
+	l := NewLedger{
+		ID:   uuid.NewV4().String(),
+		Name: fake.Brand(),
 	}
 	return &l
 }
 
 func TestLedgerService(t *testing.T) {
 	Convey("Given new ledger object", t, func() {
-		newLedger := randomLedger()
+		user := randomUser()
+		newLedger := randomNewLedger()
 		Convey("When created", func() {
-			created, err := service.createLedger(*newLedger)
+			created, err := service.createLedger(user, newLedger)
 
 			Convey("It should not fail", func() {
 				So(err, ShouldBeNil)
+			})
+
+			Convey("Create a new ledger for given attributes", func() {
+				So(created.ID, ShouldEqual, newLedger.ID)
+				So(created.Name, ShouldEqual, newLedger.Name)
+				So(created.CreatedUserID, ShouldEqual, user.ID)
 			})
 
 			Convey("It should get ID generated", func() {
@@ -52,6 +69,14 @@ func TestLedgerService(t *testing.T) {
 				fromDb.UpdatedAt = created.UpdatedAt
 				So(res.RecordNotFound(), ShouldBeFalse)
 				So(&fromDb, ShouldResemble, created)
+			})
+		})
+
+		Convey("When failed to create", func() {
+			created, err := service.createLedger(user, &NewLedger{})
+			Convey("It should return error object", func() {
+				So(err, ShouldNotBeNil)
+				So(created, ShouldBeNil)
 			})
 		})
 	})

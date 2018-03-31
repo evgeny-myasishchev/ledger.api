@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/jinzhu/gorm"
-	uuid "github.com/satori/go.uuid"
+	"ledger.api/pkg/users"
 )
 
 // Ledger model
@@ -17,19 +17,30 @@ type Ledger struct {
 	UpdatedAt     time.Time `gorm:"not null"`
 }
 
+// NewLedger model
+type NewLedger struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 // Service that defines common ledger operations operations
 type Service interface {
-	createLedger(Ledger) (*Ledger, error)
+	createLedger(user *users.User, newLedger *NewLedger) (*Ledger, error)
 }
 
 type dbService struct {
 	db *gorm.DB
 }
 
-func (dbSvc dbService) createLedger(ledger Ledger) (*Ledger, error) {
-	ledgerID := uuid.NewV4().String()
-	ledger.ID = ledgerID
-	dbSvc.db.Create(&ledger)
+func (dbSvc dbService) createLedger(user *users.User, newLedger *NewLedger) (*Ledger, error) {
+	ledger := Ledger{
+		ID:            newLedger.ID,
+		Name:          newLedger.Name,
+		CreatedUserID: user.ID,
+	}
+	if err := dbSvc.db.Create(&ledger).Error; err != nil {
+		return nil, err
+	}
 	return &ledger, nil
 }
 

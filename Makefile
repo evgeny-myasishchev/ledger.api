@@ -16,7 +16,7 @@
 BIN := ledger-api
 
 # This repo's root import path (under GOPATH).
-PKG := github.com/evgeny-myasishchev/ledger.api
+PKG := ledger.api
 
 # Where to push the docker image.
 REGISTRY ?= TODO

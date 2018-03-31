@@ -10,6 +10,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	. "github.com/smartystreets/goconvey/convey"
 	"ledger.api/pkg/app"
+	"ledger.api/pkg/logging"
 	"ledger.api/pkg/users"
 )
 
@@ -18,7 +19,7 @@ var service Service
 
 func TestMain(m *testing.M) {
 	cfg := app.GetConfig()
-	DB = app.OpenGormConnection(cfg.GetString("DB_URL"))
+	DB = app.OpenGormConnection(cfg.GetString("DB_URL"), logging.NewTestLogger())
 	defer DB.Close()
 	service = CreateService(DB)
 

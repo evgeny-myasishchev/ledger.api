@@ -9,10 +9,15 @@ import (
 	"ledger.api/pkg/server"
 )
 
-func TestRoutes(t *testing.T) {
-	router := server.
+func SetupRouter() server.Router {
+
+	return server.
 		CreateTestRouter().
-		RegisterRoutes(Routes)
+		RegisterRoutes(CreateRoutes(service))
+}
+
+func TestCreateRoute(t *testing.T) {
+	router := SetupRouter()
 	Convey("Given ledger routes", t, func() {
 		recorder := httptest.NewRecorder()
 		Convey("When route is POST create", func() {

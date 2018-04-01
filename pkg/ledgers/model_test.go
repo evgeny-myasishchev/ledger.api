@@ -2,30 +2,13 @@ package ledgers
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/icrowley/fake"
-	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 	. "github.com/smartystreets/goconvey/convey"
-	"ledger.api/pkg/app"
-	"ledger.api/pkg/logging"
 	"ledger.api/pkg/users"
 )
-
-var DB *gorm.DB
-var service Service
-
-func TestMain(m *testing.M) {
-	cfg := app.GetConfig()
-	DB = app.OpenGormConnection(cfg.GetString("DB_URL"), logging.NewTestLogger())
-	defer DB.Close()
-	service = CreateService(DB)
-
-	// call flag.Parse() here if TestMain uses flags
-	os.Exit(m.Run())
-}
 
 func randomUser() *users.User {
 	u := users.User{

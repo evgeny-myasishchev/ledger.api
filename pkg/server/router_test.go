@@ -148,6 +148,14 @@ func TestRoute(t *testing.T) {
 				})
 			})
 		})
+	})
+}
+
+func TestBindingAndValidation(t *testing.T) {
+
+	Convey("Given model binding", t, func() {
+		router := CreateTestRouter()
+		recorder := httptest.NewRecorder()
 
 		type Person struct {
 			ID        int    `jsonapi:"primary,persons"`

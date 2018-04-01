@@ -24,8 +24,16 @@ func TestCreateRoute(t *testing.T) {
 			req, _ := http.NewRequest("POST", "/v2/ledgers", nil)
 			router.ServeHTTP(recorder, req)
 
+			Convey("It should save the ledger", func() {
+
+			})
+
 			Convey("It should respond with 200", func() {
 				So(recorder.Code, ShouldEqual, 200)
+			})
+
+			Convey("It should respond with ledger details", func() {
+
 			})
 		})
 

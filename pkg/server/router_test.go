@@ -19,15 +19,15 @@ import (
 func TestRoute(t *testing.T) {
 
 	Convey("Given router", t, func() {
-		router := CreateTestRouter()
+		router := CreateHTTPApp(HTTPAppConfig{env: "test"})
 		recorder := httptest.NewRecorder()
 
 		Convey("When registering routes", func() {
-			router.RegisterRoutes(func(r Router) {
-				r.GET("/v1/some-resource", func(c Context) (*Response, error) {
+			router.RegisterRoutes(func(r *Router) {
+				r.GET("/v1/some-resource", func(c *Context) (*Response, error) {
 					return c.R(JSON{"fake": "string"}), nil
 				})
-				r.GET("/v1/some-resource/503", func(c Context) (*Response, error) {
+				r.GET("/v1/some-resource/503", func(c *Context) (*Response, error) {
 					return c.R(JSON{"fake": "string"}).S(503), nil
 				})
 			})
@@ -78,8 +78,8 @@ func TestRoute(t *testing.T) {
 		Convey("When handler returns error", func() {
 
 			Convey("Given standard error", func() {
-				router.RegisterRoutes(func(r Router) {
-					r.GET("/v1/fail-with-default-error", func(c Context) (*Response, error) {
+				router.RegisterRoutes(func(r *Router) {
+					r.GET("/v1/fail-with-default-error", func(c *Context) (*Response, error) {
 						return nil, errors.New("Something went very wrong")
 					})
 				})
@@ -118,8 +118,8 @@ func TestRoute(t *testing.T) {
 					},
 				}
 
-				router.RegisterRoutes(func(r Router) {
-					r.GET("/v1/fail-with-http-error", func(c Context) (*Response, error) {
+				router.RegisterRoutes(func(r *Router) {
+					r.GET("/v1/fail-with-http-error", func(c *Context) (*Response, error) {
 						return nil, httpErr
 					})
 				})
@@ -154,7 +154,7 @@ func TestRoute(t *testing.T) {
 func TestBindingAndValidation(t *testing.T) {
 
 	Convey("Given model binding", t, func() {
-		router := CreateTestRouter()
+		router := CreateHTTPApp(HTTPAppConfig{env: "test"})
 		recorder := httptest.NewRecorder()
 
 		type Person struct {
@@ -164,10 +164,10 @@ func TestBindingAndValidation(t *testing.T) {
 		}
 
 		var receivedPerson Person
-		router.RegisterRoutes(func(r Router) {
-			r.POST("/v1/persons", func(c Context) (*Response, error) {
+		router.RegisterRoutes(func(r *Router) {
+			r.POST("/v1/persons", func(c *Context) (*Response, error) {
 				err := c.Bind(&receivedPerson)
-				c.Logger().Infof("Bound person %v %v", err, receivedPerson)
+				c.Logger.Infof("Bound person %v %v", err, receivedPerson)
 				return c.R(nil), err
 			})
 		})

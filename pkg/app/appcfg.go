@@ -11,6 +11,7 @@ type Config interface {
 }
 
 func setDefaults(cfg *viper.Viper) *viper.Viper {
+	cfg.SetDefault("APP_ENV", "dev")
 	cfg.SetDefault("DB_URL", "host=localhost port=5432 user=postgres dbname=ledger-dev sslmode=disable")
 	cfg.SetDefault("PORT", 3000)
 	return cfg

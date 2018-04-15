@@ -119,7 +119,15 @@ func (logger *logrusLogger) Writer() *io.PipeWriter {
 }
 
 //NewLogger - Create new logger instance
-func NewLogger() Logger {
+func NewLogger(env string) Logger {
+	if env == "test" {
+		return NewTestLogger()
+	}
+
+	if env == "dev" {
+		return NewPrettyLogger(os.Stdout)
+	}
+
 	logger := logrusLogger{
 		target: &logrus.Logger{
 			Out: os.Stderr,

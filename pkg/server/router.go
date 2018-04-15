@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/google/jsonapi"
 	validator "gopkg.in/go-playground/validator.v9"
@@ -124,7 +123,8 @@ type HTTPApp struct {
 
 // HTTPAppConfig - config structure for HTTPApp instance
 type HTTPAppConfig struct {
-	env string
+	Env    string
+	Logger logging.Logger
 }
 
 // RegisterRoutes - register app routes
@@ -148,13 +148,9 @@ func (app *HTTPApp) Run(port int) {
 
 // CreateHTTPApp - creates an instance of HTTPApp
 func CreateHTTPApp(cfg HTTPAppConfig) *HTTPApp {
-	var logger logging.Logger
-	if cfg.env == "test" {
-		logger = logging.NewTestLogger()
-	} else if cfg.env == "dev" {
-		logger = logging.NewPrettyLogger(os.Stdout)
-	} else {
-		logger = logging.NewLogger()
+	logger := cfg.Logger
+	if logger == nil {
+		logger = logging.NewLogger(cfg.Env)
 	}
 	logger.Debug("Initializing test router")
 

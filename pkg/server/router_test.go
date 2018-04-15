@@ -19,7 +19,7 @@ import (
 func TestRoute(t *testing.T) {
 
 	Convey("Given router", t, func() {
-		router := CreateHTTPApp(HTTPAppConfig{env: "test"})
+		router := CreateHTTPApp(HTTPAppConfig{Env: "test"})
 		recorder := httptest.NewRecorder()
 
 		Convey("When registering routes", func() {
@@ -154,7 +154,7 @@ func TestRoute(t *testing.T) {
 func TestBindingAndValidation(t *testing.T) {
 
 	Convey("Given model binding", t, func() {
-		router := CreateHTTPApp(HTTPAppConfig{env: "test"})
+		router := CreateHTTPApp(HTTPAppConfig{Env: "test"})
 		recorder := httptest.NewRecorder()
 
 		type Person struct {

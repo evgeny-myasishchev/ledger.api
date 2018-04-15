@@ -9,10 +9,10 @@ import (
 	"ledger.api/pkg/server"
 )
 
-func SetupRouter() server.Router {
+func SetupRouter() *server.HTTPApp {
 
 	return server.
-		CreateTestRouter().
+		CreateHTTPApp(server.HTTPAppConfig{Env: "test"}).
 		RegisterRoutes(CreateRoutes(service))
 }
 

@@ -13,7 +13,7 @@ import (
 
 func TestRoutes(t *testing.T) {
 	router := server.
-		CreateTestRouter().
+		CreateHTTPApp(server.HTTPAppConfig{Env: "test"}).
 		RegisterRoutes(Routes)
 	Convey("Given app routes", t, func() {
 		recorder := httptest.NewRecorder()

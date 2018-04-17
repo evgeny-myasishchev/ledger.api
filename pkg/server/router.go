@@ -57,9 +57,10 @@ type HandlerFunc func(*Context) (*Response, error)
 
 // Router - http router structure
 type Router struct {
-	engine   HTTPEngine
-	logger   logging.Logger
-	validate *validator.Validate
+	engine     HTTPEngine
+	logger     logging.Logger
+	validate   *validator.Validate
+	middleware MiddlewareFunc
 }
 
 // GET - register get route
@@ -75,11 +76,12 @@ func (r *Router) POST(relativePath string, handler HandlerFunc) *Router {
 func (r *Router) handle(method string, path string, handler HandlerFunc) *Router {
 	r.logger.Debugf("Registering route: %v %v", method, path)
 	r.engine.Handle(method, path, func(w http.ResponseWriter, req *http.Request) {
-		res, err := handler(&Context{
+		context := Context{
 			req:      req,
 			validate: r.validate,
 			Logger:   r.logger, //TODO: Child logger with RequestID
-		})
+		}
+		res, err := r.middleware(&context, handler)
 		if err != nil {
 			r.logger.WithError(err).Error("Failed to process request")
 			httpErr, ok := err.(HTTPError)
@@ -146,6 +148,17 @@ func (app *HTTPApp) Run(port int) {
 	}
 }
 
+// Use - Insert another middleware into a call chain
+func (app *HTTPApp) Use(middleware MiddlewareFunc) *HTTPApp {
+	head := app.router.middleware
+	app.router.middleware = func(context *Context, next HandlerFunc) (*Response, error) {
+		return head(context, func(ctx *Context) (*Response, error) {
+			return middleware(ctx, next)
+		})
+	}
+	return app
+}
+
 // CreateHTTPApp - creates an instance of HTTPApp
 func CreateHTTPApp(cfg HTTPAppConfig) *HTTPApp {
 	logger := cfg.Logger
@@ -155,9 +168,10 @@ func CreateHTTPApp(cfg HTTPAppConfig) *HTTPApp {
 	logger.Debug("Initializing test router")
 
 	router := Router{
-		engine:   createGinEngine(logger),
-		logger:   logger,
-		validate: validator.New(),
+		engine:     createGinEngine(logger),
+		logger:     logger,
+		validate:   validator.New(),
+		middleware: NewCallNextMiddleware(),
 	}
 
 	httpApp := HTTPApp{

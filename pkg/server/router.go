@@ -84,7 +84,6 @@ func (r *Router) handle(method string, path string, handler HandlerFunc) *Router
 		}
 		res, err := r.middleware(&context, handler)
 		if err != nil {
-			r.logger.WithError(err).Error("Failed to process request")
 			httpErr, ok := err.(HTTPError)
 			if !ok {
 				httpErr = *InternalServerError()
@@ -160,6 +159,14 @@ func (app *HTTPApp) Use(middleware MiddlewareFunc) *HTTPApp {
 	return app
 }
 
+// UseDefaultMiddleware Initializes default middleware
+func (app *HTTPApp) UseDefaultMiddleware() *HTTPApp {
+	app.
+		Use(NewRequestIDMiddleware()).
+		Use(NewLoggingMiddleware())
+	return app
+}
+
 // CreateHTTPApp - creates an instance of HTTPApp
 func CreateHTTPApp(cfg HTTPAppConfig) *HTTPApp {
 	logger := cfg.Logger
@@ -180,5 +187,5 @@ func CreateHTTPApp(cfg HTTPAppConfig) *HTTPApp {
 		router: &router,
 	}
 
-	return &httpApp
+	return httpApp.UseDefaultMiddleware()
 }

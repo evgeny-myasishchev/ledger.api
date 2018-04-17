@@ -7,6 +7,7 @@ import (
 
 	"github.com/icrowley/fake"
 	. "github.com/smartystreets/goconvey/convey"
+	"ledger.api/pkg/logging"
 )
 
 func TestMiddleware(t *testing.T) {
@@ -14,7 +15,7 @@ func TestMiddleware(t *testing.T) {
 		Convey("When NewRequestIDMiddleware is used", func() {
 			middleware := NewRequestIDMiddleware()
 			req, _ := http.NewRequest("GET", "/v1/some-resource", nil)
-			context := &Context{req: req}
+			context := &Context{req: req, Logger: logging.NewTestLogger()}
 
 			Convey("It should generate a new request id", func() {
 				middleware(context, func(ctx *Context) (*Response, error) {

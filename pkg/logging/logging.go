@@ -35,8 +35,33 @@ type logrusLogger struct {
 	entry  *logrus.Entry
 }
 
+type logrusTarget interface {
+	WithError(err error) *logrus.Entry
+	WithField(key string, value interface{}) *logrus.Entry
+	WithFields(fields logrus.Fields) *logrus.Entry
+
+	Info(args ...interface{})
+	Infof(format string, args ...interface{})
+
+	Debug(args ...interface{})
+	Debugf(format string, args ...interface{})
+
+	Warn(args ...interface{})
+	Warnf(format string, args ...interface{})
+
+	Error(args ...interface{})
+	Errorf(format string, args ...interface{})
+}
+
+func (logger *logrusLogger) getTarget() logrusTarget {
+	if logger.entry != nil {
+		return logger.entry
+	}
+	return logger.target
+}
+
 func (logger *logrusLogger) WithError(err error) Logger {
-	entry := logger.target.WithError(err)
+	entry := logger.getTarget().WithError(err)
 	childLogger := &logrusLogger{
 		target: logger.target,
 		entry:  entry,
@@ -45,7 +70,7 @@ func (logger *logrusLogger) WithError(err error) Logger {
 }
 
 func (logger *logrusLogger) WithField(key string, value interface{}) Logger {
-	entry := logger.target.WithField(key, value)
+	entry := logger.getTarget().WithField(key, value)
 	childLogger := &logrusLogger{
 		target: logger.target,
 		entry:  entry,
@@ -54,7 +79,7 @@ func (logger *logrusLogger) WithField(key string, value interface{}) Logger {
 }
 
 func (logger *logrusLogger) WithFields(fields Fields) Logger {
-	entry := logger.target.WithFields(logrus.Fields(fields))
+	entry := logger.getTarget().WithFields(logrus.Fields(fields))
 	childLogger := &logrusLogger{
 		target: logger.target,
 		entry:  entry,
@@ -63,55 +88,31 @@ func (logger *logrusLogger) WithFields(fields Fields) Logger {
 }
 
 func (logger *logrusLogger) Errorf(format string, args ...interface{}) {
-	if logger.entry != nil {
-		logger.entry.Errorf(format, args...)
-	} else {
-		logger.target.Errorf(format, args...)
-	}
+	logger.getTarget().Errorf(format, args...)
 }
 func (logger *logrusLogger) Error(args ...interface{}) {
-	if logger.entry != nil {
-		logger.entry.Error(args...)
-	} else {
-		logger.target.Error(args...)
-	}
+	logger.getTarget().Error(args...)
 }
 
 func (logger *logrusLogger) Warnf(format string, args ...interface{}) {
-	logger.target.Warnf(format, args...)
+	logger.getTarget().Warnf(format, args...)
 }
 func (logger *logrusLogger) Warn(args ...interface{}) {
-	logger.target.Warn(args)
+	logger.getTarget().Warn(args)
 }
 
 func (logger *logrusLogger) Infof(format string, args ...interface{}) {
-	if logger.entry != nil {
-		logger.entry.Infof(format, args...)
-	} else {
-		logger.target.Infof(format, args...)
-	}
+	logger.getTarget().Infof(format, args...)
 }
 func (logger *logrusLogger) Info(args ...interface{}) {
-	if logger.entry != nil {
-		logger.entry.Info(args...)
-	} else {
-		logger.target.Info(args...)
-	}
+	logger.getTarget().Info(args...)
 }
 
 func (logger *logrusLogger) Debugf(format string, args ...interface{}) {
-	if logger.entry != nil {
-		logger.entry.Debugf(format, args...)
-	} else {
-		logger.target.Debugf(format, args...)
-	}
+	logger.getTarget().Debugf(format, args...)
 }
 func (logger *logrusLogger) Debug(args ...interface{}) {
-	if logger.entry != nil {
-		logger.entry.Debug(args...)
-	} else {
-		logger.target.Debug(args...)
-	}
+	logger.getTarget().Debug(args...)
 }
 
 func (logger *logrusLogger) Writer() *io.PipeWriter {

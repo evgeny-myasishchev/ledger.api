@@ -15,8 +15,9 @@ type JSON map[string]interface{}
 
 // Context request context structure
 type Context struct {
-	req      *http.Request
-	validate *validator.Validate
+	req       *http.Request
+	validate  *validator.Validate
+	requestID string
 
 	Logger logging.Logger
 }

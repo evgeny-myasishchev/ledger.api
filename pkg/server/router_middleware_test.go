@@ -10,7 +10,7 @@ import (
 
 func TestRouteMiddleware(t *testing.T) {
 
-	Convey("Given router", t, func() {
+	Convey("Given router middleware", t, func() {
 		app := CreateHTTPApp(HTTPAppConfig{Env: "test"})
 		recorder := httptest.NewRecorder()
 

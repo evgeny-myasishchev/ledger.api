@@ -14,22 +14,6 @@
   version = "v1.4.7"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/gin-contrib/sse"
-  packages = ["."]
-  revision = "22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae"
-
-[[projects]]
-  name = "github.com/gin-gonic/gin"
-  packages = [
-    ".",
-    "binding",
-    "render"
-  ]
-  revision = "d459835d2b077e44f7c9b453505ee29881d5d12d"
-  version = "v1.2"
-
-[[projects]]
   name = "github.com/go-playground/locales"
   packages = [
     ".",
@@ -43,12 +27,6 @@
   packages = ["."]
   revision = "b32fa301c9fe55953584134cb6853a13c87ec0a1"
   version = "v0.16.0"
-
-[[projects]]
-  name = "github.com/golang/protobuf"
-  packages = ["proto"]
-  revision = "925541529c1fa6821df4e44ce2723319eb2be768"
-  version = "v1.0.0"
 
 [[projects]]
   name = "github.com/google/jsonapi"
@@ -128,12 +106,6 @@
   version = "v1.7.6"
 
 [[projects]]
-  name = "github.com/mattn/go-isatty"
-  packages = ["."]
-  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
-  version = "v0.0.3"
-
-[[projects]]
   branch = "master"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
@@ -211,12 +183,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  name = "github.com/ugorji/go"
-  packages = ["codec"]
-  revision = "9831f2c3ac1068a78f50999a30db84270f647af6"
-  version = "v1.1"
-
-[[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
@@ -245,12 +211,6 @@
   version = "v0.3.0"
 
 [[projects]]
-  name = "gopkg.in/go-playground/validator.v8"
-  packages = ["."]
-  revision = "5f1438d3fca68893a817e4a66806cea46a9e4ebf"
-  version = "v8.18.2"
-
-[[projects]]
   name = "gopkg.in/go-playground/validator.v9"
   packages = ["."]
   revision = "8ce234ff024d85b3848e485decba806385d6e276"
@@ -265,6 +225,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e2051b4d0cf4a380cb110a317394aa0311d654af557fe8fe17c1425acbf24cd4"
+  inputs-digest = "4986eba62a045cab943721b1706612ebe9bffac4cab42bf9d3e0c5b8159b235e"
   solver-name = "gps-cdcl"
   solver-version = 1

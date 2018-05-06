@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/google/jsonapi"
 	"github.com/icrowley/fake"
 	. "github.com/smartystreets/goconvey/convey"
@@ -37,7 +36,7 @@ func TestRoute(t *testing.T) {
 				router.ServeHTTP(recorder, req)
 
 				So(recorder.Code, ShouldEqual, 200)
-				expectedMessage, _ := json.Marshal(gin.H{"fake": "string"})
+				expectedMessage, _ := json.Marshal(JSON{"fake": "string"})
 				So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
 			})
 
@@ -46,7 +45,7 @@ func TestRoute(t *testing.T) {
 				router.ServeHTTP(recorder, req)
 
 				So(recorder.Code, ShouldEqual, 503)
-				expectedMessage, _ := json.Marshal(gin.H{"fake": "string"})
+				expectedMessage, _ := json.Marshal(JSON{"fake": "string"})
 				So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
 			})
 		})

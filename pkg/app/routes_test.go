@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	. "github.com/smartystreets/goconvey/convey"
 	"ledger.api/pkg/server"
 )
@@ -26,7 +25,7 @@ func TestRoutes(t *testing.T) {
 			})
 
 			Convey("It should respond with ping", func() {
-				expectedMessage, _ := json.Marshal(gin.H{"message": "pong"})
+				expectedMessage, _ := json.Marshal(server.JSON{"message": "pong"})
 				So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
 			})
 		})

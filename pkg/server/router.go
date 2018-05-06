@@ -10,6 +10,10 @@ import (
 	"ledger.api/pkg/logging"
 )
 
+const noRouteErrFmt = `{ "errors": [ { "status": "%v", "title": "%v" } ] }`
+
+var noRouteErrorBody = []byte(fmt.Sprintf(noRouteErrFmt, http.StatusNotFound, http.StatusText(http.StatusNotFound)))
+
 // JSON is a shortcup for map[string]interface{}
 type JSON map[string]interface{}
 
@@ -161,9 +165,10 @@ func (app *HTTPApp) Use(middleware MiddlewareFunc) *HTTPApp {
 
 // UseDefaultMiddleware Initializes default middleware
 func (app *HTTPApp) UseDefaultMiddleware() *HTTPApp {
-	app.
-		Use(NewRequestIDMiddleware()).
-		Use(NewLoggingMiddleware())
+	// TODO: Restore after reworking middleware
+	// app.
+	// Use(NewRequestIDMiddleware()).
+	// Use(NewLoggingMiddleware())
 	return app
 }
 
@@ -176,7 +181,7 @@ func CreateHTTPApp(cfg HTTPAppConfig) *HTTPApp {
 	logger.Debug("Initializing test router")
 
 	router := Router{
-		engine:     createGinEngine(logger),
+		engine:     createHTTPRouterEngine(logger),
 		logger:     logger,
 		validate:   validator.New(),
 		middleware: NewCallNextMiddleware(),

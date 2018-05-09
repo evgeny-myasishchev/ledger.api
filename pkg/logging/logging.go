@@ -1,12 +1,17 @@
 package logging
 
 import (
+	"context"
 	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
 )
+
+type contextKey string
+
+const loggerKey contextKey = "logger"
 
 // Fields - represents fields structure
 type Fields map[string]interface{}
@@ -164,4 +169,14 @@ func NewPrettyLogger(out io.Writer) Logger {
 		target: &target,
 	}
 	return &logger
+}
+
+// CreateContext - create a new context with logger value set
+func CreateContext(ctx context.Context, logger Logger) context.Context {
+	return context.WithValue(ctx, loggerKey, logger)
+}
+
+// FromContext - return logger from given context
+func FromContext(ctx context.Context) Logger {
+	return ctx.Value(loggerKey).(Logger)
 }

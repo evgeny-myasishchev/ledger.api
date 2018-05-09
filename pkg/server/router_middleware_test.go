@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -32,7 +33,7 @@ func TestRouteMiddleware(t *testing.T) {
 
 		Convey("When middleware is registered", func() {
 			middlewareInvoked := false
-			app.Use2(func(w http.ResponseWriter, req *http.Request, next func()) {
+			app.Use(func(w http.ResponseWriter, req *http.Request, next ServeHTTPFunc) {
 				logger.Infof("Processing req %v with test middleware", req.URL.Path)
 				middlewareInvoked = true
 				if req.URL.Path == "/v1/should-abort" {
@@ -46,7 +47,7 @@ func TestRouteMiddleware(t *testing.T) {
 					}
 					return
 				}
-				next()
+				next(w, req)
 			})
 
 			Convey("It should invoke middleware prior to route handler", func() {
@@ -66,17 +67,17 @@ func TestRouteMiddleware(t *testing.T) {
 					})
 				})
 
-				app.Use2(func(w http.ResponseWriter, req *http.Request, next func()) {
+				app.Use(func(w http.ResponseWriter, req *http.Request, next ServeHTTPFunc) {
 					logger.Info("Processing mw 0")
 					So(callCount, ShouldEqual, 0)
 					callCount++
-					next()
+					next(w, req)
 				})
-				app.Use2(func(w http.ResponseWriter, req *http.Request, next func()) {
+				app.Use(func(w http.ResponseWriter, req *http.Request, next ServeHTTPFunc) {
 					logger.Info("Processing mw 1")
 					So(callCount, ShouldEqual, 1)
 					callCount++
-					next()
+					next(w, req)
 				})
 
 				req, _ := http.NewRequest("GET", "/v1/some-ordered-route", nil)
@@ -98,32 +99,35 @@ func TestRouteMiddleware(t *testing.T) {
 
 func TestNewRequestIDMiddleware(t *testing.T) {
 	Convey("Given RequestIDMiddleware", t, func() {
+		recorder := httptest.NewRecorder()
 		Convey("When NewRequestIDMiddleware is used", func() {
 			middleware := NewRequestIDMiddleware()
+			context := logging.CreateContext(context.Background(), logging.NewTestLogger())
 			req, _ := http.NewRequest("GET", "/v1/some-resource", nil)
-			context := &Context{req: req, Logger: logging.NewTestLogger()}
+			req = req.WithContext(context)
 
 			Convey("It should generate a new request id", func() {
-				middleware(context, func(ctx *Context) (*Response, error) {
-					return nil, nil
+				var requestID string
+				middleware(recorder, req, func(w http.ResponseWriter, mwReq *http.Request) {
+					requestID = RequestIDVAlue(mwReq.Context())
 				})
-				So(context.requestID, ShouldNotBeEmpty)
+				So(requestID, ShouldNotBeEmpty)
 			})
 
 			Convey("It should use a request id from X-Request-ID header", func() {
 				reqID := fmt.Sprintf("req-id-%v", fake.Characters())
 				req.Header.Add("X-Request-ID", reqID)
-				middleware(context, func(ctx *Context) (*Response, error) {
-					return nil, nil
+				var actualRequestID string
+				middleware(recorder, req, func(w http.ResponseWriter, mwReq *http.Request) {
+					actualRequestID = RequestIDVAlue(mwReq.Context())
 				})
-				So(context.requestID, ShouldEqual, reqID)
+				So(actualRequestID, ShouldEqual, reqID)
 			})
 
 			Convey("It should call next", func() {
 				nextCalled := false
-				middleware(context, func(ctx *Context) (*Response, error) {
+				middleware(recorder, req, func(w http.ResponseWriter, req *http.Request) {
 					nextCalled = true
-					return nil, nil
 				})
 				So(nextCalled, ShouldBeTrue)
 			})

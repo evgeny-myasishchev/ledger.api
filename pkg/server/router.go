@@ -62,11 +62,10 @@ type HandlerFunc func(*Context) (*Response, error)
 
 // Router - http router structure
 type Router struct {
-	engine      HTTPEngine
-	logger      logging.Logger
-	validate    *validator.Validate
-	middleware  MiddlewareFunc
-	middleware2 RouterMiddlewareFunc
+	engine     HTTPEngine
+	logger     logging.Logger
+	validate   *validator.Validate
+	middleware RouterMiddlewareFunc
 }
 
 // GET - register get route
@@ -87,7 +86,7 @@ func (r *Router) handle(method string, path string, handler HandlerFunc) *Router
 			validate: r.validate,
 			Logger:   r.logger, //TODO: Child logger with RequestID
 		}
-		res, err := r.middleware(&context, handler)
+		res, err := handler(&context)
 		if err != nil {
 			httpErr, ok := err.(HTTPError)
 			if !ok {
@@ -141,9 +140,7 @@ func (app *HTTPApp) RegisterRoutes(routes Routes) *HTTPApp {
 }
 
 func (app *HTTPApp) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	app.router.middleware2(w, req, func() {
-		app.router.engine.ServeHTTP(w, req)
-	})
+	app.router.middleware(w, req, app.router.engine.ServeHTTP)
 }
 
 // Run - start server for given port
@@ -156,21 +153,11 @@ func (app *HTTPApp) Run(port int) {
 }
 
 // Use - Insert another middleware into a call chain
-func (app *HTTPApp) Use(middleware MiddlewareFunc) *HTTPApp {
+func (app *HTTPApp) Use(middleware RouterMiddlewareFunc) *HTTPApp {
 	head := app.router.middleware
-	app.router.middleware = func(context *Context, next HandlerFunc) (*Response, error) {
-		return head(context, func(ctx *Context) (*Response, error) {
-			return middleware(ctx, next)
-		})
-	}
-	return app
-}
-
-func (app *HTTPApp) Use2(middleware RouterMiddlewareFunc) *HTTPApp {
-	head := app.router.middleware2
-	app.router.middleware2 = func(w http.ResponseWriter, req *http.Request, next func()) {
-		head(w, req, func() {
-			middleware(w, req, next)
+	app.router.middleware = func(w http.ResponseWriter, req *http.Request, next ServeHTTPFunc) {
+		head(w, req, func(nextW http.ResponseWriter, nextReq *http.Request) {
+			middleware(nextW, nextReq, next)
 		})
 	}
 	return app
@@ -194,12 +181,11 @@ func CreateHTTPApp(cfg HTTPAppConfig) *HTTPApp {
 	logger.Debug("Initializing test router")
 
 	router := Router{
-		engine:     createHTTPRouterEngine(logger),
-		logger:     logger,
-		validate:   validator.New(),
-		middleware: NewCallNextMiddleware(),
-		middleware2: func(w http.ResponseWriter, req *http.Request, next func()) {
-			next()
+		engine:   createHTTPRouterEngine(logger),
+		logger:   logger,
+		validate: validator.New(),
+		middleware: func(w http.ResponseWriter, req *http.Request, next ServeHTTPFunc) {
+			next(w, req)
 		},
 	}
 

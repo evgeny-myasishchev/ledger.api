@@ -1,64 +1,71 @@
 package server
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	uuid "github.com/satori/go.uuid"
+	"ledger.api/pkg/logging"
 )
 
-// MiddlewareFunc - generic middleware function
-type MiddlewareFunc func(*Context, HandlerFunc) (*Response, error)
+type contextKeys string
 
-type RouterMiddlewareFunc func(w http.ResponseWriter, req *http.Request, next func())
+const requestIDKey contextKeys = "requestID"
 
-// NewCallNextMiddleware - creates a middleware that will just call next handler
-func NewCallNextMiddleware() MiddlewareFunc {
-	return func(ctx *Context, next HandlerFunc) (*Response, error) {
-		return next(ctx)
+// ServeHTTPFunc - ServeHTTP function
+type ServeHTTPFunc func(w http.ResponseWriter, req *http.Request)
+
+// RouterMiddlewareFunc - Generic router middleware interface
+type RouterMiddlewareFunc func(w http.ResponseWriter, req *http.Request, next ServeHTTPFunc)
+
+// NewRequestIDMiddleware - creates a middleware that will maintain the requestId header
+func NewRequestIDMiddleware() RouterMiddlewareFunc {
+	return func(w http.ResponseWriter, req *http.Request, next ServeHTTPFunc) {
+		logger := logging.FromContext(req.Context())
+		requestID := req.Header.Get("x-request-id")
+		if requestID == "" {
+			requestID = uuid.NewV4().String()
+		}
+		nextCtx := ContextWithRequestID(req.Context(), requestID)
+		nextCtx = logging.CreateContext(nextCtx, logger.WithField("RequestID", requestID))
+		next(w, req.WithContext(nextCtx))
 	}
 }
 
-// NewRequestIDMiddleware - creates a middleware that will maintain the requestId header
-func NewRequestIDMiddleware() MiddlewareFunc {
-	return func(ctx *Context, next HandlerFunc) (*Response, error) {
-		if requestID := ctx.req.Header.Get("x-request-id"); requestID != "" {
-			ctx.requestID = requestID
-		} else {
-			ctx.requestID = uuid.NewV4().String()
-		}
-		ctx.Logger = ctx.Logger.WithField("RequestID", ctx.requestID)
-		return next(ctx)
-	}
+// ContextWithRequestID - create context with requestID
+func ContextWithRequestID(ctx context.Context, requestID string) context.Context {
+	return context.WithValue(ctx, requestIDKey, requestID)
+}
+
+// RequestIDVAlue - returns requestID value taken from context
+func RequestIDVAlue(ctx context.Context) string {
+	return ctx.Value(requestIDKey).(string)
 }
 
 // NewLoggingMiddleware - log request start/end
-// func NewLoggingMiddleware() MiddlewareFunc {
-// 	return func(ctx *Context, next HandlerFunc) (*Response, error) {
-//
-// 		method := ctx.req.Method
-// 		path := ctx.req.URL.Path
-//
-// 		logger := ctx.Logger
-//
-// 		logger.WithFields(logging.Fields{
-// 			"UserAgent":  ctx.req.UserAgent(),
-// 			"RemoteAddr": ctx.req.RemoteAddr,
-// 		}).
-// 			Infof("BEGIN REQ: %s %s", method, path)
-// 		start := time.Now()
-// 		res, err := next(ctx)
-// 		if err != nil {
-// 			logger.WithError(err).Error("Failed to process request")
-// 		}
-// 		end := time.Now()
-// 		duration := end.Sub(start)
-// 		logger.
-// 			// TODO: Optionally response headers
-// 			WithFields(logging.Fields{
-// 				"StatusCode": res.status,
-// 				"Duration":   duration,
-// 			}).
-// 			Infof("END REQ: %s %s", method, path)
-// 		return res, err
-// 	}
-// }
+func NewLoggingMiddleware() RouterMiddlewareFunc {
+	return func(w http.ResponseWriter, req *http.Request, next ServeHTTPFunc) {
+		method := req.Method
+		path := req.URL.Path
+
+		logger := logging.FromContext(req.Context())
+
+		logger.WithFields(logging.Fields{
+			"UserAgent":  req.UserAgent(),
+			"RemoteAddr": req.RemoteAddr,
+		}).
+			Infof("BEGIN REQ: %s %s", method, path)
+		start := time.Now()
+		next(w, req)
+		end := time.Now()
+		duration := end.Sub(start)
+		logger.
+			// TODO: Optionally response headers
+			WithFields(logging.Fields{
+				"StatusCode": req.Response.StatusCode,
+				"Duration":   duration,
+			}).
+			Infof("END REQ: %s %s", method, path)
+	}
+}

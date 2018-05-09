@@ -62,10 +62,11 @@ type HandlerFunc func(*Context) (*Response, error)
 
 // Router - http router structure
 type Router struct {
-	engine     HTTPEngine
-	logger     logging.Logger
-	validate   *validator.Validate
-	middleware MiddlewareFunc
+	engine      HTTPEngine
+	logger      logging.Logger
+	validate    *validator.Validate
+	middleware  MiddlewareFunc
+	middleware2 RouterMiddlewareFunc
 }
 
 // GET - register get route
@@ -140,7 +141,9 @@ func (app *HTTPApp) RegisterRoutes(routes Routes) *HTTPApp {
 }
 
 func (app *HTTPApp) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	app.router.engine.ServeHTTP(w, req)
+	app.router.middleware2(w, req, func() {
+		app.router.engine.ServeHTTP(w, req)
+	})
 }
 
 // Run - start server for given port
@@ -158,6 +161,16 @@ func (app *HTTPApp) Use(middleware MiddlewareFunc) *HTTPApp {
 	app.router.middleware = func(context *Context, next HandlerFunc) (*Response, error) {
 		return head(context, func(ctx *Context) (*Response, error) {
 			return middleware(ctx, next)
+		})
+	}
+	return app
+}
+
+func (app *HTTPApp) Use2(middleware RouterMiddlewareFunc) *HTTPApp {
+	head := app.router.middleware2
+	app.router.middleware2 = func(w http.ResponseWriter, req *http.Request, next func()) {
+		head(w, req, func() {
+			middleware(w, req, next)
 		})
 	}
 	return app
@@ -185,6 +198,9 @@ func CreateHTTPApp(cfg HTTPAppConfig) *HTTPApp {
 		logger:     logger,
 		validate:   validator.New(),
 		middleware: NewCallNextMiddleware(),
+		middleware2: func(w http.ResponseWriter, req *http.Request, next func()) {
+			next()
+		},
 	}
 
 	httpApp := HTTPApp{

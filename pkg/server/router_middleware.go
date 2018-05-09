@@ -1,11 +1,15 @@
 package server
 
 import (
+	"net/http"
+
 	uuid "github.com/satori/go.uuid"
 )
 
 // MiddlewareFunc - generic middleware function
 type MiddlewareFunc func(*Context, HandlerFunc) (*Response, error)
+
+type RouterMiddlewareFunc func(w http.ResponseWriter, req *http.Request, next func())
 
 // NewCallNextMiddleware - creates a middleware that will just call next handler
 func NewCallNextMiddleware() MiddlewareFunc {

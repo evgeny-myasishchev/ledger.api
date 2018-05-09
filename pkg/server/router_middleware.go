@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"net/http"
-	"time"
 
 	uuid "github.com/satori/go.uuid"
 	"ledger.api/pkg/logging"
@@ -56,16 +55,16 @@ func NewLoggingMiddleware() RouterMiddlewareFunc {
 			"RemoteAddr": req.RemoteAddr,
 		}).
 			Infof("BEGIN REQ: %s %s", method, path)
-		start := time.Now()
+		// start := time.Now()
 		next(w, req)
-		end := time.Now()
-		duration := end.Sub(start)
+		// end := time.Now()
+		// duration := end.Sub(start)
 		logger.
 			// TODO: Optionally response headers
-			WithFields(logging.Fields{
-				"StatusCode": req.Response.StatusCode,
-				"Duration":   duration,
-			}).
+			// WithFields(logging.Fields{
+			// 	"StatusCode": req.Response.StatusCode,
+			// 	"Duration":   duration,
+			// }).
 			Infof("END REQ: %s %s", method, path)
 	}
 }

@@ -118,7 +118,7 @@ func (r *Router) handle(method string, path string, handler HandlerFunc) *Router
 type HTTPEngine interface {
 	Handle(method string, path string, handler http.HandlerFunc)
 	ServeHTTP(w http.ResponseWriter, req *http.Request)
-	Run(port string) error
+	Run(port string, handler http.Handler) error
 }
 
 // HTTPApp app structure to register routes and start listening
@@ -140,13 +140,14 @@ func (app *HTTPApp) RegisterRoutes(routes Routes) *HTTPApp {
 }
 
 func (app *HTTPApp) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	app.router.middleware(w, req, app.router.engine.ServeHTTP)
+	reqWithLogger := req.WithContext(logging.CreateContext(req.Context(), app.logger))
+	app.router.middleware(w, reqWithLogger, app.router.engine.ServeHTTP)
 }
 
 // Run - start server for given port
 func (app *HTTPApp) Run(port int) {
 	app.logger.Infof("Starting server on port: %v", port)
-	err := app.router.engine.Run(fmt.Sprintf(":%v", port))
+	err := app.router.engine.Run(fmt.Sprintf(":%v", port), app)
 	if err != nil {
 		panic(err)
 	}
@@ -165,10 +166,9 @@ func (app *HTTPApp) Use(middleware RouterMiddlewareFunc) *HTTPApp {
 
 // UseDefaultMiddleware Initializes default middleware
 func (app *HTTPApp) UseDefaultMiddleware() *HTTPApp {
-	// TODO: Restore after reworking middleware
-	// app.
-	// Use(NewRequestIDMiddleware()).
-	// Use(NewLoggingMiddleware())
+	app.
+		Use(NewRequestIDMiddleware()).
+		Use(NewLoggingMiddleware())
 	return app
 }
 
@@ -178,7 +178,7 @@ func CreateHTTPApp(cfg HTTPAppConfig) *HTTPApp {
 	if logger == nil {
 		logger = logging.NewLogger(cfg.Env)
 	}
-	logger.Debug("Initializing test router")
+	logger.Debug("Initializing app router")
 
 	router := Router{
 		engine:   createHTTPRouterEngine(logger),

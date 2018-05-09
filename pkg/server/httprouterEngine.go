@@ -21,8 +21,8 @@ func (engine *httpRouterEngine) ServeHTTP(w http.ResponseWriter, req *http.Reque
 	engine.router.ServeHTTP(w, req)
 }
 
-func (engine *httpRouterEngine) Run(port string) error {
-	return http.ListenAndServe(port, engine.router)
+func (engine *httpRouterEngine) Run(port string, handler http.Handler) error {
+	return http.ListenAndServe(port, handler)
 }
 
 func createHTTPRouterEngine(logger logging.Logger) HTTPEngine {

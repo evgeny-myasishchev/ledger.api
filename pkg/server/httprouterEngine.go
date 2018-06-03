@@ -21,10 +21,6 @@ func (engine *httpRouterEngine) ServeHTTP(w http.ResponseWriter, req *http.Reque
 	engine.router.ServeHTTP(w, req)
 }
 
-func (engine *httpRouterEngine) Run(port string, handler http.Handler) error {
-	return http.ListenAndServe(port, handler)
-}
-
 func createHTTPRouterEngine(logger logging.Logger) HTTPEngine {
 	router := httprouter.New()
 	router.NotFound = func(w http.ResponseWriter, req *http.Request) {

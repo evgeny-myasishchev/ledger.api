@@ -12,15 +12,12 @@ type contextKeys string
 
 const requestIDKey contextKeys = "requestID"
 
-// ServeHTTPFunc - ServeHTTP function
-type ServeHTTPFunc func(w http.ResponseWriter, req *http.Request)
-
 // RouterMiddlewareFunc - Generic router middleware interface
-type RouterMiddlewareFunc func(w http.ResponseWriter, req *http.Request, next ServeHTTPFunc)
+type RouterMiddlewareFunc func(next http.HandlerFunc) http.HandlerFunc
 
 // NewRequestIDMiddleware - creates a middleware that will maintain the requestId header
-func NewRequestIDMiddleware() RouterMiddlewareFunc {
-	return func(w http.ResponseWriter, req *http.Request, next ServeHTTPFunc) {
+func NewRequestIDMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
 		logger := logging.FromContext(req.Context())
 		requestID := req.Header.Get("x-request-id")
 		if requestID == "" {
@@ -43,8 +40,8 @@ func RequestIDVAlue(ctx context.Context) string {
 }
 
 // NewLoggingMiddleware - log request start/end
-func NewLoggingMiddleware() RouterMiddlewareFunc {
-	return func(w http.ResponseWriter, req *http.Request, next ServeHTTPFunc) {
+func NewLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
 		method := req.Method
 		path := req.URL.Path
 

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"container/list"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -65,7 +66,7 @@ type Router struct {
 	engine     HTTPEngine
 	logger     logging.Logger
 	validate   *validator.Validate
-	middleware RouterMiddlewareFunc
+	middleware list.List
 }
 
 // GET - register get route
@@ -118,7 +119,6 @@ func (r *Router) handle(method string, path string, handler HandlerFunc) *Router
 type HTTPEngine interface {
 	Handle(method string, path string, handler http.HandlerFunc)
 	ServeHTTP(w http.ResponseWriter, req *http.Request)
-	Run(port string, handler http.Handler) error
 }
 
 // HTTPApp app structure to register routes and start listening
@@ -139,37 +139,50 @@ func (app *HTTPApp) RegisterRoutes(routes Routes) *HTTPApp {
 	return app
 }
 
-func (app *HTTPApp) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	reqWithLogger := req.WithContext(logging.CreateContext(req.Context(), app.logger))
-	app.router.middleware(w, reqWithLogger, app.router.engine.ServeHTTP)
-}
-
-// Run - start server for given port
-func (app *HTTPApp) Run(port int) {
-	app.logger.Infof("Starting server on port: %v", port)
-	err := app.router.engine.Run(fmt.Sprintf(":%v", port), app)
-	if err != nil {
-		panic(err)
-	}
-}
+// func (app *HTTPApp) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+// 	reqWithLogger := req.WithContext(logging.CreateContext(req.Context(), app.logger))
+// 	app.router.middleware(w, reqWithLogger)
+// }
 
 // Use - Insert another middleware into a call chain
 func (app *HTTPApp) Use(middleware RouterMiddlewareFunc) *HTTPApp {
-	head := app.router.middleware
-	app.router.middleware = func(w http.ResponseWriter, req *http.Request, next ServeHTTPFunc) {
-		head(w, req, func(nextW http.ResponseWriter, nextReq *http.Request) {
-			middleware(nextW, nextReq, next)
-		})
-	}
+	app.router.middleware.PushBack(middleware)
 	return app
 }
 
 // UseDefaultMiddleware Initializes default middleware
 func (app *HTTPApp) UseDefaultMiddleware() *HTTPApp {
 	app.
-		Use(NewRequestIDMiddleware()).
-		Use(NewLoggingMiddleware())
+		Use(func(next http.HandlerFunc) http.HandlerFunc {
+			return func(w http.ResponseWriter, req *http.Request) {
+				contextWithLogger := logging.CreateContext(req.Context(), app.logger)
+				requestWithLogger := req.WithContext(contextWithLogger)
+				next(w, requestWithLogger)
+			}
+		}).
+		Use(NewRequestIDMiddleware).
+		Use(NewLoggingMiddleware)
 	return app
+}
+
+type httpHandler struct {
+	target http.HandlerFunc
+}
+
+func (handler *httpHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	handler.target(w, req)
+}
+
+// CreateHandler - creates http.Handler instance that can serve requests
+// defined by this app
+func (app *HTTPApp) CreateHandler() http.Handler {
+	target := app.router.engine.ServeHTTP
+	for e := app.router.middleware.Back(); e != nil; e = e.Prev() {
+		target = e.Value.(RouterMiddlewareFunc)(target)
+	}
+	return &httpHandler{
+		target: target,
+	}
 }
 
 // CreateHTTPApp - creates an instance of HTTPApp
@@ -180,13 +193,12 @@ func CreateHTTPApp(cfg HTTPAppConfig) *HTTPApp {
 	}
 	logger.Debug("Initializing app router")
 
+	engine := createHTTPRouterEngine(logger)
+
 	router := Router{
-		engine:   createHTTPRouterEngine(logger),
+		engine:   engine,
 		logger:   logger,
 		validate: validator.New(),
-		middleware: func(w http.ResponseWriter, req *http.Request, next ServeHTTPFunc) {
-			next(w, req)
-		},
 	}
 
 	httpApp := HTTPApp{

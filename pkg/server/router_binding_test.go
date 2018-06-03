@@ -15,7 +15,7 @@ import (
 func TestBindingAndValidation(t *testing.T) {
 
 	Convey("Given model binding", t, func() {
-		router := CreateHTTPApp(HTTPAppConfig{Env: "test"})
+		app := CreateHTTPApp(HTTPAppConfig{Env: "test"})
 		recorder := httptest.NewRecorder()
 
 		type Person struct {
@@ -25,13 +25,15 @@ func TestBindingAndValidation(t *testing.T) {
 		}
 
 		var receivedPerson Person
-		router.RegisterRoutes(func(r *Router) {
+		app.RegisterRoutes(func(r *Router) {
 			r.POST("/v1/persons", func(c *Context) (*Response, error) {
 				err := c.Bind(&receivedPerson)
 				c.Logger.Infof("Bound person %v %v", err, receivedPerson)
 				return c.R(nil), err
 			})
 		})
+
+		handler := app.CreateHandler()
 
 		Convey("When valid request body is submitted", func() {
 			validPerson := Person{
@@ -46,7 +48,7 @@ func TestBindingAndValidation(t *testing.T) {
 			}
 
 			req, _ := http.NewRequest("POST", "/v1/persons", data)
-			router.ServeHTTP(recorder, req)
+			handler.ServeHTTP(recorder, req)
 
 			Convey("It should respond with ok", func() {
 				So(recorder.Code, ShouldEqual, 200)
@@ -59,7 +61,7 @@ func TestBindingAndValidation(t *testing.T) {
 
 		Convey("When corrupted request body is submitted", func() {
 			req, _ := http.NewRequest("POST", "/v1/persons", bytes.NewBufferString("Some crap"))
-			router.ServeHTTP(recorder, req)
+			handler.ServeHTTP(recorder, req)
 
 			Convey("It should fail with 500 error", func() {
 				So(recorder.Code, ShouldEqual, 500)
@@ -94,7 +96,7 @@ func TestBindingAndValidation(t *testing.T) {
 			}
 
 			req, _ := http.NewRequest("POST", "/v1/persons", data)
-			router.ServeHTTP(recorder, req)
+			handler.ServeHTTP(recorder, req)
 
 			Convey("It should respond with bad request", func() {
 				So(recorder.Code, ShouldEqual, 400)

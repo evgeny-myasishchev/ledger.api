@@ -29,10 +29,11 @@ func TestRoute(t *testing.T) {
 					return c.R(JSON{"fake": "string"}).S(503), nil
 				})
 			})
+			handler := router.CreateHandler()
 
 			Convey("It should invoke provided handler", func() {
 				req, _ := http.NewRequest("GET", "/v1/some-resource", nil)
-				router.ServeHTTP(recorder, req)
+				handler.ServeHTTP(recorder, req)
 
 				So(recorder.Code, ShouldEqual, 200)
 				expectedMessage, _ := json.Marshal(JSON{"fake": "string"})
@@ -41,7 +42,7 @@ func TestRoute(t *testing.T) {
 
 			Convey("It set custom status code", func() {
 				req, _ := http.NewRequest("GET", "/v1/some-resource/503", nil)
-				router.ServeHTTP(recorder, req)
+				handler.ServeHTTP(recorder, req)
 
 				So(recorder.Code, ShouldEqual, 503)
 				expectedMessage, _ := json.Marshal(JSON{"fake": "string"})
@@ -51,7 +52,8 @@ func TestRoute(t *testing.T) {
 
 		Convey("When request to unknown route", func() {
 			req, _ := http.NewRequest("GET", "/v1/some-resource", nil)
-			router.ServeHTTP(recorder, req)
+			handler := router.CreateHandler()
+			handler.ServeHTTP(recorder, req)
 
 			Convey("It should respond 404 status", func() {
 				So(recorder.Code, ShouldEqual, 404)
@@ -82,7 +84,8 @@ func TestRoute(t *testing.T) {
 					})
 				})
 				req, _ := http.NewRequest("GET", "/v1/fail-with-default-error", nil)
-				router.ServeHTTP(recorder, req)
+				handler := router.CreateHandler()
+				handler.ServeHTTP(recorder, req)
 
 				Convey("It should respond with default status code", func() {
 					So(recorder.Code, ShouldEqual, 500)
@@ -123,7 +126,8 @@ func TestRoute(t *testing.T) {
 				})
 
 				req, _ := http.NewRequest("GET", "/v1/fail-with-http-error", nil)
-				router.ServeHTTP(recorder, req)
+				handler := router.CreateHandler()
+				handler.ServeHTTP(recorder, req)
 
 				Convey("It should respond with err status code", func() {
 					So(recorder.Code, ShouldEqual, httpErr.Status)

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"ledger.api/pkg/app"
 	"ledger.api/pkg/logging"
@@ -14,8 +16,12 @@ func main() {
 	db := app.OpenGormConnection(cfg.GetString("DB_URL"), logger)
 	defer db.Close()
 
-	router := server.
+	handler := server.
 		CreateHTTPApp(server.HTTPAppConfig{Env: env, Logger: logger}).
-		RegisterRoutes(app.Routes)
-	router.Run(cfg.GetInt("PORT"))
+		RegisterRoutes(app.Routes).
+		CreateHandler()
+
+	port := cfg.GetInt("PORT")
+	logger.Infof("Starting server on port: %v", port)
+	http.ListenAndServe(port, handler)
 }

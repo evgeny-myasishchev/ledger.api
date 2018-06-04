@@ -18,17 +18,14 @@ var noRouteErrorBody = []byte(fmt.Sprintf(noRouteErrFmt, http.StatusNotFound, ht
 // JSON is a shortcup for map[string]interface{}
 type JSON map[string]interface{}
 
-// Context request context structure
-type Context struct {
-	req       *http.Request
-	validate  *validator.Validate
-	requestID string
-
-	Logger logging.Logger
+// HandlerToolkit - Collection of various tools to help processing request and build a response
+type HandlerToolkit struct {
+	validate *validator.Validate
+	Logger   logging.Logger
 }
 
-// R returns default response structure
-func (c *Context) R(obj JSON) *Response {
+// JSON - Returns JSON response object with status 200
+func (h *HandlerToolkit) JSON(obj JSON) *Response {
 	r := &Response{status: 200, json: obj}
 	return r
 }
@@ -39,27 +36,27 @@ type Response struct {
 	status int
 }
 
-// S - set custom response status
-func (r *Response) S(status int) *Response {
+// Status - set custom response status
+func (r *Response) Status(status int) *Response {
 	r.status = status
 	return r
 }
 
 // Bind - binds given object to request body (json)
-func (c *Context) Bind(obj interface{}) error {
-	err := jsonapi.UnmarshalPayload(c.req.Body, obj) //TODO: Close req.Body?
+func (h *HandlerToolkit) Bind(req *http.Request, obj interface{}) error {
+	err := jsonapi.UnmarshalPayload(req.Body, obj) //TODO: Close req.Body?
 	if err != nil {
 		return err
 	}
 
-	return c.validate.Struct(obj)
+	return h.validate.Struct(obj)
 }
 
 // Routes - routes registry function
 type Routes func(router *Router)
 
 // HandlerFunc - generic route handler function
-type HandlerFunc func(*Context) (*Response, error)
+type HandlerFunc func(req *http.Request, h *HandlerToolkit) (*Response, error)
 
 // Router - http router structure
 type Router struct {
@@ -82,12 +79,11 @@ func (r *Router) POST(relativePath string, handler HandlerFunc) *Router {
 func (r *Router) handle(method string, path string, handler HandlerFunc) *Router {
 	r.logger.Debugf("Registering route: %v %v", method, path)
 	r.engine.Handle(method, path, func(w http.ResponseWriter, req *http.Request) {
-		context := Context{
-			req:      req,
+		toolkit := HandlerToolkit{
 			validate: r.validate,
-			Logger:   r.logger, //TODO: Child logger with RequestID
+			Logger:   logging.FromContext(req.Context()),
 		}
-		res, err := handler(&context)
+		res, err := handler(req, &toolkit)
 		if err != nil {
 			httpErr, ok := err.(HTTPError)
 			if !ok {

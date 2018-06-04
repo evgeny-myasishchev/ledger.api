@@ -1,10 +1,16 @@
 package app
 
-import "ledger.api/pkg/server"
+import (
+	"net/http"
+
+	"ledger.api/pkg/server"
+)
 
 // Routes - Register app routes
 func Routes(router *server.Router) {
-	router.GET("/v2/healthcheck/ping", func(c *server.Context) (*server.Response, error) {
-		return c.R(server.JSON{"message": "pong"}), nil
-	})
+	router.GET("/v2/healthcheck/ping", handlePing)
+}
+
+func handlePing(req *http.Request, h *server.HandlerToolkit) (*server.Response, error) {
+	return h.JSON(server.JSON{"message": "pong"}), nil
 }

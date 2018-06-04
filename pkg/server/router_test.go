@@ -22,11 +22,11 @@ func TestRoute(t *testing.T) {
 
 		Convey("When registering routes", func() {
 			router.RegisterRoutes(func(r *Router) {
-				r.GET("/v1/some-resource", func(c *Context) (*Response, error) {
-					return c.R(JSON{"fake": "string"}), nil
+				r.GET("/v1/some-resource", func(req *http.Request, h *HandlerToolkit) (*Response, error) {
+					return h.JSON(JSON{"fake": "string"}), nil
 				})
-				r.GET("/v1/some-resource/503", func(c *Context) (*Response, error) {
-					return c.R(JSON{"fake": "string"}).S(503), nil
+				r.GET("/v1/some-resource/503", func(req *http.Request, h *HandlerToolkit) (*Response, error) {
+					return h.JSON(JSON{"fake": "string"}).Status(503), nil
 				})
 			})
 			handler := router.CreateHandler()
@@ -79,7 +79,7 @@ func TestRoute(t *testing.T) {
 
 			Convey("Given standard error", func() {
 				router.RegisterRoutes(func(r *Router) {
-					r.GET("/v1/fail-with-default-error", func(c *Context) (*Response, error) {
+					r.GET("/v1/fail-with-default-error", func(req *http.Request, h *HandlerToolkit) (*Response, error) {
 						return nil, errors.New("Something went very wrong")
 					})
 				})
@@ -120,7 +120,7 @@ func TestRoute(t *testing.T) {
 				}
 
 				router.RegisterRoutes(func(r *Router) {
-					r.GET("/v1/fail-with-http-error", func(c *Context) (*Response, error) {
+					r.GET("/v1/fail-with-http-error", func(req *http.Request, h *HandlerToolkit) (*Response, error) {
 						return nil, httpErr
 					})
 				})

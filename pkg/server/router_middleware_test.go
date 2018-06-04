@@ -21,12 +21,12 @@ func TestRouteMiddleware(t *testing.T) {
 
 		handlerCalled := false
 		app.RegisterRoutes(func(r *Router) {
-			r.handle("GET", "/v1/some-resource", func(c *Context) (*Response, error) {
+			r.handle("GET", "/v1/some-resource", func(req *http.Request, h *HandlerToolkit) (*Response, error) {
 				handlerCalled = true
-				return c.R(JSON{"fake": "string"}), nil
+				return h.JSON(JSON{"fake": "string"}), nil
 			})
-			r.handle("GET", "/v1/should-abort", func(c *Context) (*Response, error) {
-				return c.R(JSON{"fake": "string"}), nil
+			r.handle("GET", "/v1/should-abort", func(req *http.Request, h *HandlerToolkit) (*Response, error) {
+				return h.JSON(JSON{"fake": "string"}), nil
 			})
 		})
 
@@ -62,11 +62,11 @@ func TestRouteMiddleware(t *testing.T) {
 			Convey("It should invoke multiple middlewares in order of registering", func() {
 				callCount := 0
 				app.RegisterRoutes(func(r *Router) {
-					r.handle("GET", "/v1/some-ordered-route", func(c *Context) (*Response, error) {
-						c.Logger.Info("Processing actual route handler")
+					r.handle("GET", "/v1/some-ordered-route", func(req *http.Request, h *HandlerToolkit) (*Response, error) {
+						h.Logger.Info("Processing actual route handler")
 						So(callCount, ShouldEqual, 3)
 						callCount++
-						return c.R(JSON{"fake": "string"}), nil
+						return h.JSON(JSON{"fake": "string"}), nil
 					})
 				})
 

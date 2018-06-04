@@ -26,10 +26,10 @@ func TestBindingAndValidation(t *testing.T) {
 
 		var receivedPerson Person
 		app.RegisterRoutes(func(r *Router) {
-			r.POST("/v1/persons", func(c *Context) (*Response, error) {
-				err := c.Bind(&receivedPerson)
-				c.Logger.Infof("Bound person %v %v", err, receivedPerson)
-				return c.R(nil), err
+			r.POST("/v1/persons", func(req *http.Request, h *HandlerToolkit) (*Response, error) {
+				err := h.Bind(req, &receivedPerson)
+				h.Logger.Infof("Bound person %v %v", err, receivedPerson)
+				return h.JSON(nil), err
 			})
 		})
 

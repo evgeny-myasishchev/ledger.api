@@ -18,7 +18,7 @@ func TestRoutes(t *testing.T) {
 		recorder := httptest.NewRecorder()
 		Convey("When route is healthcheck", func() {
 			req, _ := http.NewRequest("GET", "/v2/healthcheck/ping", nil)
-			router.ServeHTTP(recorder, req)
+			router.CreateHandler().ServeHTTP(recorder, req)
 
 			Convey("It should respond with 200", func() {
 				So(recorder.Code, ShouldEqual, 200)

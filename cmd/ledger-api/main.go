@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -23,5 +24,7 @@ func main() {
 
 	port := cfg.GetInt("PORT")
 	logger.Infof("Starting server on port: %v", port)
-	http.ListenAndServe(port, handler)
+	if err := http.ListenAndServe(fmt.Sprintf(":%v", port), handler); err != nil {
+		logger.Error(err, "Failed to start server")
+	}
 }

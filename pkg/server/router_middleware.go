@@ -39,6 +39,24 @@ func RequestIDVAlue(ctx context.Context) string {
 	return ctx.Value(requestIDKey).(string)
 }
 
+type loggingMiddlewareResponseWrapper struct {
+	target http.ResponseWriter
+	status int
+}
+
+func (lmw *loggingMiddlewareResponseWrapper) Header() http.Header {
+	return lmw.target.Header()
+}
+
+func (lmw *loggingMiddlewareResponseWrapper) Write(b []byte) (int, error) {
+	return lmw.target.Write(b)
+}
+
+func (lmw *loggingMiddlewareResponseWrapper) WriteHeader(status int) {
+	lmw.target.WriteHeader(status)
+	lmw.status = status
+}
+
 // NewLoggingMiddleware - log request start/end
 func NewLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -52,16 +70,19 @@ func NewLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			"RemoteAddr": req.RemoteAddr,
 		}).
 			Infof("BEGIN REQ: %s %s", method, path)
+		wrappedWriter := loggingMiddlewareResponseWrapper{
+			target: w,
+		}
 		// start := time.Now()
-		next(w, req)
+		next(&wrappedWriter, req)
 		// end := time.Now()
 		// duration := end.Sub(start)
 		logger.
 			// TODO: Optionally response headers
-			// WithFields(logging.Fields{
-			// 	"StatusCode": req.Response.StatusCode,
-			// 	"Duration":   duration,
-			// }).
+			WithFields(logging.Fields{
+				"StatusCode": wrappedWriter.status,
+				// "Duration":   duration,
+			}).
 			Infof("END REQ: %s %s", method, path)
 	}
 }

@@ -84,19 +84,9 @@ func (r *Router) handle(method string, path string, handler HandlerFunc) *Router
 			Logger:   logging.FromContext(req.Context()),
 		}
 		res, err := handler(req, &toolkit)
+		// TODO: Log error?
 		if err != nil {
-			httpErr, ok := err.(HTTPError)
-			if !ok {
-				httpErr = *InternalServerError()
-			}
-			validationErr, ok := err.(validator.ValidationErrors)
-			if ok {
-				httpErr = *BuildHTTPErrorFromValidationError(&validationErr)
-			}
-			w.WriteHeader(httpErr.Status)
-			if err := httpErr.MarshalErrors(w); err != nil {
-				panic(err)
-			}
+			respondWithError(w, err)
 		} else {
 			w.WriteHeader(res.status)
 			buffer, err := json.Marshal(res.json)
@@ -109,6 +99,21 @@ func (r *Router) handle(method string, path string, handler HandlerFunc) *Router
 		}
 	})
 	return r
+}
+
+func respondWithError(w http.ResponseWriter, err error) {
+	httpErr, ok := err.(HTTPError)
+	if !ok {
+		httpErr = *InternalServerError()
+	}
+	validationErr, ok := err.(validator.ValidationErrors)
+	if ok {
+		httpErr = *BuildHTTPErrorFromValidationError(&validationErr)
+	}
+	w.WriteHeader(httpErr.Status)
+	if err := httpErr.MarshalErrors(w); err != nil {
+		panic(err)
+	}
 }
 
 // HTTPEngine - generic http engine interface that can register routes and serve requests

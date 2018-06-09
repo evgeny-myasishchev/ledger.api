@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	uuid "github.com/satori/go.uuid"
+	"ledger.api/pkg/auth"
 	"ledger.api/pkg/logging"
 )
 
@@ -84,5 +85,13 @@ func NewLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 				// "Duration":   duration,
 			}).
 			Infof("END REQ: %s %s", method, path)
+	}
+}
+
+// CreateAuthMiddlewareFunc returns auth middleware func that creates auth middleware
+func CreateAuthMiddlewareFunc(validator auth.RequestValidator) RouterMiddlewareFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, req *http.Request) {
+		}
 	}
 }

@@ -3,6 +3,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/auth0-community/go-auth0"
+  packages = ["."]
+  revision = "1d107141f8599169748ae31df2e1537acd848944"
+
+[[projects]]
+  branch = "master"
   name = "github.com/corpix/uarand"
   packages = ["."]
   revision = "2b8494104d86337cdd41d0a49cbed8e4583c0ab4"
@@ -12,6 +18,12 @@
   packages = ["."]
   revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
   version = "v1.4.7"
+
+[[projects]]
+  name = "github.com/go-errors/errors"
+  packages = ["."]
+  revision = "a6af135bd4e28680facf08a3d206b454abc877a4"
+  version = "v1.0.1"
 
 [[projects]]
   name = "github.com/go-playground/locales"
@@ -185,7 +197,11 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["ssh/terminal"]
+  packages = [
+    "ed25519",
+    "ed25519/internal/edwards25519",
+    "ssh/terminal"
+  ]
   revision = "374053ea96cb300f8671b8d3b07edeeb06e203b4"
 
 [[projects]]
@@ -217,6 +233,17 @@
   version = "v9.13.0"
 
 [[projects]]
+  name = "gopkg.in/square/go-jose.v2"
+  packages = [
+    ".",
+    "cipher",
+    "json",
+    "jwt"
+  ]
+  revision = "76dd09796242edb5b897103a75df2645c028c960"
+  version = "v2.1.6"
+
+[[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   revision = "7f97868eec74b32b0982dd158a51a446d1da7eb5"
@@ -225,6 +252,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4986eba62a045cab943721b1706612ebe9bffac4cab42bf9d3e0c5b8159b235e"
+  inputs-digest = "5238bb1eaa036352f637442fb87a5fdacf4cf099455bfc814722ec6d2071f10e"
   solver-name = "gps-cdcl"
   solver-version = 1

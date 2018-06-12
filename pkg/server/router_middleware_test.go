@@ -10,6 +10,9 @@ import (
 
 	"github.com/icrowley/fake"
 	. "github.com/smartystreets/goconvey/convey"
+	jose "gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/jwt"
+	"ledger.api/pkg/auth"
 	"ledger.api/pkg/logging"
 )
 
@@ -152,5 +155,55 @@ func TestNewRequestIDMiddleware(t *testing.T) {
 				So(nextCalled, ShouldBeTrue)
 			})
 		})
+	})
+}
+
+func TestAuthMiddleware(t *testing.T) {
+	Convey("Given AuthMiddleware", t, func() {
+		Convey("When auth header provided", func() {
+			// privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+			// So(err, ShouldBeNil)
+			// key := jose.SigningKey{Algorithm: jose.HS256, Key: "Hello"}
+			pwd := fake.SimplePassword()
+			iss := fmt.Sprintf("iss-%v", fake.Characters())
+			aud := fmt.Sprintf("aud-%v", fake.Characters())
+			key := jose.SigningKey{Algorithm: jose.HS256, Key: []byte(pwd)}
+			signer, err := jose.NewSigner(key, (&jose.SignerOptions{}).WithType("JWT"))
+			So(err, ShouldBeNil)
+			base := jwt.Claims{}
+			claims := auth.LedgerClaims{
+				"hello, hello1",
+				&base,
+			}
+			token, err := jwt.Signed(signer).Claims(claims).CompactSerialize()
+			So(err, ShouldBeNil)
+			println(pwd)
+			println(token)
+			validator := auth.CreateHS256Validator(pwd, iss, aud)
+			middlewareFunc := CreateAuthMiddlewareFunc(validator)
+
+			req, err := http.NewRequest("GET", "/v1/something", nil)
+			if err != nil {
+				panic(err)
+			}
+
+			Convey("It should validate the token and set auth data to context", func() {
+				recorder := httptest.NewRecorder()
+				nextCalled := false
+				middleware := middlewareFunc(func(w http.ResponseWriter, req *http.Request) {
+					actualClaims := auth.ClaimsFromContext(req.Context())
+					So(actualClaims, ShouldEqual, claims)
+					nextCalled = true
+				})
+				req.Header.Add("Authorization", "Bearer "+token)
+				middleware(recorder, req)
+				So(nextCalled, ShouldBeTrue)
+			})
+			// Convey("It should respond with 401 if token validation fails")
+		})
+
+		// Convey("When no auth header provided", func() {
+		// 	Convey("It should respond with 401 error")
+		// })
 	})
 }

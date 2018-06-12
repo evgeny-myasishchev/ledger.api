@@ -92,6 +92,25 @@ func NewLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 func CreateAuthMiddlewareFunc(validator auth.RequestValidator) RouterMiddlewareFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, req *http.Request) {
+			validator.ValidateRequest(req)
+			token, err := validator.ValidateRequest(req)
+			if err != nil {
+				// TODO
+				panic(err)
+			}
+
+			claims := auth.LedgerClaims{}
+
+			validator.Claims(req, token, &claims)
+			if err != nil {
+				// TODO
+				panic(err)
+			}
+
+			nextContext := auth.ContextWithClaims(req.Context(), &claims)
+			nextReq := req.WithContext(nextContext)
+
+			next(w, nextReq)
 		}
 	}
 }

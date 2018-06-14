@@ -26,8 +26,7 @@ func CreateAuth0Validator(iss string, aud string) RequestValidator {
 // CreateHS256Validator returns validator instance configured to use
 // jwt tokens signed using HS256 alg
 func CreateHS256Validator(secret string, iss string, aud string) RequestValidator {
-	key := jose.SigningKey{Algorithm: jose.HS256, Key: []byte(secret)}
-	keyProvider := auth0.NewKeyProvider(key)
+	keyProvider := auth0.NewKeyProvider([]byte(secret))
 	configuration := auth0.NewConfiguration(keyProvider, []string{aud}, iss, jose.HS256)
 	validator := auth0.NewValidator(configuration, nil)
 	return validator

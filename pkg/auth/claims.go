@@ -12,8 +12,8 @@ const ledgerClaimsKey contextKeys = "ledgerClaims"
 
 // LedgerClaims - claims structure supported by ledger
 type LedgerClaims struct {
-	Scope string `json:"scope"`
 	*jwt.Claims
+	Scope string `json:"scope"`
 }
 
 // ClaimsFromContext returns an instance of LedgerClaims from context

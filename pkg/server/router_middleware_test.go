@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/icrowley/fake"
 	. "github.com/smartystreets/goconvey/convey"
@@ -158,28 +159,52 @@ func TestNewRequestIDMiddleware(t *testing.T) {
 	})
 }
 
+type jwtTokenSetup struct {
+	pwd      string
+	iss      string
+	aud      string
+	rawToken string
+	claims   *auth.LedgerClaims
+}
+
+func setupJwtToken() (*jwtTokenSetup, error) {
+	pwd := fake.SimplePassword()
+	iss := fmt.Sprintf("iss-%v", fake.Characters())
+	aud := fmt.Sprintf("aud-%v", fake.Characters())
+	key := jose.SigningKey{Algorithm: jose.HS256, Key: []byte(pwd)}
+	signer, err := jose.NewSigner(key, (&jose.SignerOptions{}).WithType("JWT"))
+	if err != nil {
+		return nil, err
+	}
+	commonClaims := jwt.Claims{
+		Issuer:   iss,
+		Audience: []string{aud},
+		Expiry:   jwt.NewNumericDate(time.Now().Add(time.Minute)),
+	}
+	claims := auth.LedgerClaims{
+		Claims: &commonClaims,
+		Scope:  fmt.Sprintf("scope1%v,scope2%v", fake.Characters(), fake.Characters()),
+	}
+	rawToken, err := jwt.Signed(signer).Claims(claims).CompactSerialize()
+	if err != nil {
+		return nil, err
+	}
+	return &jwtTokenSetup{
+		pwd:      pwd,
+		iss:      iss,
+		aud:      aud,
+		rawToken: rawToken,
+		claims:   &claims,
+	}, nil
+}
+
 func TestAuthMiddleware(t *testing.T) {
 	Convey("Given AuthMiddleware", t, func() {
 		Convey("When auth header provided", func() {
-			// privKey, err := rsa.GenerateKey(rand.Reader, 2048)
-			// So(err, ShouldBeNil)
-			// key := jose.SigningKey{Algorithm: jose.HS256, Key: "Hello"}
-			pwd := fake.SimplePassword()
-			iss := fmt.Sprintf("iss-%v", fake.Characters())
-			aud := fmt.Sprintf("aud-%v", fake.Characters())
-			key := jose.SigningKey{Algorithm: jose.HS256, Key: []byte(pwd)}
-			signer, err := jose.NewSigner(key, (&jose.SignerOptions{}).WithType("JWT"))
+			tokenSetup, err := setupJwtToken()
 			So(err, ShouldBeNil)
-			base := jwt.Claims{}
-			claims := auth.LedgerClaims{
-				"hello, hello1",
-				&base,
-			}
-			token, err := jwt.Signed(signer).Claims(claims).CompactSerialize()
-			So(err, ShouldBeNil)
-			println(pwd)
-			println(token)
-			validator := auth.CreateHS256Validator(pwd, iss, aud)
+
+			validator := auth.CreateHS256Validator(tokenSetup.pwd, tokenSetup.iss, tokenSetup.aud)
 			middlewareFunc := CreateAuthMiddlewareFunc(validator)
 
 			req, err := http.NewRequest("GET", "/v1/something", nil)
@@ -192,10 +217,10 @@ func TestAuthMiddleware(t *testing.T) {
 				nextCalled := false
 				middleware := middlewareFunc(func(w http.ResponseWriter, req *http.Request) {
 					actualClaims := auth.ClaimsFromContext(req.Context())
-					So(actualClaims, ShouldEqual, claims)
+					So(actualClaims, ShouldResemble, tokenSetup.claims)
 					nextCalled = true
 				})
-				req.Header.Add("Authorization", "Bearer "+token)
+				req.Header.Add("Authorization", "Bearer "+tokenSetup.rawToken)
 				middleware(recorder, req)
 				So(nextCalled, ShouldBeTrue)
 			})

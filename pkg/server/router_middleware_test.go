@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -200,18 +201,20 @@ func setupJwtToken() (*jwtTokenSetup, error) {
 
 func TestAuthMiddleware(t *testing.T) {
 	Convey("Given AuthMiddleware", t, func() {
+		tokenSetup, err := setupJwtToken()
+		So(err, ShouldBeNil)
+		validator := auth.CreateHS256Validator(tokenSetup.pwd, tokenSetup.iss, tokenSetup.aud)
+		logger := logging.NewTestLogger()
+		initLogger := CreateInitLoggerMiddlewareFunc(logger)
+		authMw := CreateAuthMiddlewareFunc(validator)
+		middlewareFunc := func(next http.HandlerFunc) http.HandlerFunc {
+			return initLogger(authMw((next)))
+		}
+		req, err := http.NewRequest("GET", "/v1/something", nil)
+		if err != nil {
+			panic(err)
+		}
 		Convey("When auth header provided", func() {
-			tokenSetup, err := setupJwtToken()
-			So(err, ShouldBeNil)
-
-			validator := auth.CreateHS256Validator(tokenSetup.pwd, tokenSetup.iss, tokenSetup.aud)
-			middlewareFunc := CreateAuthMiddlewareFunc(validator)
-
-			req, err := http.NewRequest("GET", "/v1/something", nil)
-			if err != nil {
-				panic(err)
-			}
-
 			Convey("It should validate the token and set auth data to context", func() {
 				recorder := httptest.NewRecorder()
 				nextCalled := false
@@ -224,11 +227,60 @@ func TestAuthMiddleware(t *testing.T) {
 				middleware(recorder, req)
 				So(nextCalled, ShouldBeTrue)
 			})
-			// Convey("It should respond with 401 if token validation fails")
+			Convey("It should respond with 401 if token validation fails", func() {
+				recorder := httptest.NewRecorder()
+				nextCalled := false
+				middleware := middlewareFunc(func(w http.ResponseWriter, req *http.Request) {
+					nextCalled = true
+				})
+				tokenSetup, err := setupJwtToken()
+				So(err, ShouldBeNil)
+				req.Header.Add("Authorization", "Bearer "+tokenSetup.rawToken)
+				middleware(recorder, req)
+				So(nextCalled, ShouldBeFalse)
+				So(recorder.Code, ShouldEqual, 401)
+
+				expectedMessage := map[string]interface{}{
+					"errors": []interface{}{
+						map[string]interface{}{
+							"status": strconv.Itoa(http.StatusUnauthorized),
+							"title":  http.StatusText(http.StatusUnauthorized),
+						},
+					},
+				}
+				var actualMessage map[string]interface{}
+				if err := json.Unmarshal(recorder.Body.Bytes(), &actualMessage); err != nil {
+					panic(err)
+				}
+				So(actualMessage, ShouldResemble, expectedMessage)
+			})
 		})
 
-		// Convey("When no auth header provided", func() {
-		// 	Convey("It should respond with 401 error")
-		// })
+		Convey("When no auth header provided", func() {
+			Convey("It should respond with 401 error", func() {
+				recorder := httptest.NewRecorder()
+				nextCalled := false
+				middleware := middlewareFunc(func(w http.ResponseWriter, req *http.Request) {
+					nextCalled = true
+				})
+				middleware(recorder, req)
+				So(nextCalled, ShouldBeFalse)
+				So(recorder.Code, ShouldEqual, 401)
+
+				expectedMessage := map[string]interface{}{
+					"errors": []interface{}{
+						map[string]interface{}{
+							"status": strconv.Itoa(http.StatusUnauthorized),
+							"title":  http.StatusText(http.StatusUnauthorized),
+						},
+					},
+				}
+				var actualMessage map[string]interface{}
+				if err := json.Unmarshal(recorder.Body.Bytes(), &actualMessage); err != nil {
+					panic(err)
+				}
+				So(actualMessage, ShouldResemble, expectedMessage)
+			})
+		})
 	})
 }

@@ -58,6 +58,18 @@ func (lmw *loggingMiddlewareResponseWrapper) WriteHeader(status int) {
 	lmw.status = status
 }
 
+// CreateInitLoggerMiddlewareFunc creates middleware that will init request context
+// with a logger instance. Usually should be a very first thing
+func CreateInitLoggerMiddlewareFunc(logger logging.Logger) RouterMiddlewareFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, req *http.Request) {
+			contextWithLogger := logging.CreateContext(req.Context(), logger)
+			requestWithLogger := req.WithContext(contextWithLogger)
+			next(w, requestWithLogger)
+		}
+	}
+}
+
 // NewLoggingMiddleware - log request start/end
 func NewLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -92,19 +104,21 @@ func NewLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 func CreateAuthMiddlewareFunc(validator auth.RequestValidator) RouterMiddlewareFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, req *http.Request) {
-			validator.ValidateRequest(req)
+			logger := logging.FromContext(req.Context())
 			token, err := validator.ValidateRequest(req)
 			if err != nil {
-				// TODO
-				panic(err)
+				logger.WithError(err).Error("Token validation failed")
+				respondWithErrorStatus(w, http.StatusUnauthorized)
+				return
 			}
 
 			claims := auth.LedgerClaims{}
 
 			validator.Claims(req, token, &claims)
 			if err != nil {
-				// TODO
-				panic(err)
+				logger.WithError(err).Error("Failed to get claims")
+				respondWithErrorStatus(w, http.StatusUnauthorized)
+				return
 			}
 
 			nextContext := auth.ContextWithClaims(req.Context(), &claims)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/google/jsonapi"
 	validator "gopkg.in/go-playground/validator.v9"
@@ -101,6 +102,18 @@ func (r *Router) handle(method string, path string, handler HandlerFunc) *Router
 	return r
 }
 
+func respondWithErrorStatus(w http.ResponseWriter, status int) {
+	respondWithError(w, HTTPError{
+		Status: status,
+		Errors: []*jsonapi.ErrorObject{
+			{
+				Status: strconv.Itoa(status),
+				Title:  http.StatusText(status),
+			},
+		},
+	})
+}
+
 func respondWithError(w http.ResponseWriter, err error) {
 	httpErr, ok := err.(HTTPError)
 	if !ok {
@@ -154,13 +167,7 @@ func (app *HTTPApp) Use(middleware RouterMiddlewareFunc) *HTTPApp {
 // UseDefaultMiddleware Initializes default middleware
 func (app *HTTPApp) UseDefaultMiddleware() *HTTPApp {
 	app.
-		Use(func(next http.HandlerFunc) http.HandlerFunc {
-			return func(w http.ResponseWriter, req *http.Request) {
-				contextWithLogger := logging.CreateContext(req.Context(), app.logger)
-				requestWithLogger := req.WithContext(contextWithLogger)
-				next(w, requestWithLogger)
-			}
-		}).
+		Use(CreateInitLoggerMiddlewareFunc(app.logger)).
 		Use(NewRequestIDMiddleware).
 		Use(NewLoggingMiddleware)
 	return app

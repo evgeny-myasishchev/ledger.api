@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/google/jsonapi"
 	"github.com/icrowley/fake"
 	. "github.com/smartystreets/goconvey/convey"
 	jose "gopkg.in/square/go-jose.v2"
@@ -184,7 +186,7 @@ func setupJwtToken() (*jwtTokenSetup, error) {
 	}
 	claims := auth.LedgerClaims{
 		Claims: &commonClaims,
-		Scope:  fmt.Sprintf("scope1%v,scope2%v", fake.Characters(), fake.Characters()),
+		Scope:  fmt.Sprintf("scope1%v,scope2%v,scope3%v", fake.Characters(), fake.Characters(), fake.Characters()),
 	}
 	rawToken, err := jwt.Signed(signer).Claims(claims).CompactSerialize()
 	if err != nil {
@@ -280,6 +282,75 @@ func TestAuthMiddleware(t *testing.T) {
 					panic(err)
 				}
 				So(actualMessage, ShouldResemble, expectedMessage)
+			})
+		})
+	})
+}
+
+func TestRequireScopes(t *testing.T) {
+	Convey("Given AuthMiddleware", t, func() {
+		Convey("When RequireScopes handler middleware is used", func() {
+			req, err := http.NewRequest("GET", "/v1/something", nil)
+			if err != nil {
+				panic(err)
+			}
+			toolkit := HandlerToolkit{
+				Logger: logging.NewTestLogger(),
+			}
+
+			nextCalled := false
+			nextRes := JSON{"fake": fake.Characters()}
+			next := func(handlerReq *http.Request, h *HandlerToolkit) (*Response, error) {
+				nextCalled = true
+				return h.JSON(nextRes), nil
+			}
+
+			tokenSetup, err := setupJwtToken()
+			So(err, ShouldBeNil)
+
+			mw := RequireScopes(next, strings.Split(tokenSetup.claims.Scope, ",")...)
+
+			Convey("When request context has claims", func() {
+				req = req.WithContext(auth.ContextWithClaims(req.Context(), tokenSetup.claims))
+				Convey("It should call next if all scopes are present", func() {
+					res, err := mw(req, &toolkit)
+					So(err, ShouldBeNil)
+					So(nextCalled, ShouldBeTrue)
+					So(res.json, ShouldEqual, nextRes)
+				})
+
+				Convey("It should respond with 403 if some scope is missing", func() {
+					missingScope1 := fmt.Sprintf("missing-scope1%v", fake.Characters())
+					missingScope2 := fmt.Sprintf("missing-scope2%v", fake.Characters())
+					missingScope3 := fmt.Sprintf("missing-scope3%v", fake.Characters())
+					mw := RequireScopes(next, missingScope1, missingScope2, missingScope3)
+					res, err := mw(req, &toolkit)
+					So(res, ShouldBeNil)
+					So(err, ShouldNotBeNil)
+					httpErr := err.(HTTPError)
+					So(httpErr.Status, ShouldEqual, http.StatusForbidden)
+					So(httpErr.Errors, ShouldResemble, []*jsonapi.ErrorObject{
+						{
+							Status: strconv.Itoa(http.StatusForbidden),
+							Title:  http.StatusText(http.StatusForbidden),
+							Detail: fmt.Sprintf("Missing scopes: [%v %v %v]", missingScope1, missingScope2, missingScope3),
+						},
+					})
+				})
+			})
+
+			Convey("It should respond with 404 if no claims found with the context", func() {
+				res, err := mw(req, &toolkit)
+				So(res, ShouldBeNil)
+				So(err, ShouldNotBeNil)
+				httpErr := err.(HTTPError)
+				So(httpErr.Status, ShouldEqual, http.StatusNotFound)
+				So(httpErr.Errors, ShouldResemble, []*jsonapi.ErrorObject{
+					{
+						Status: strconv.Itoa(http.StatusNotFound),
+						Title:  http.StatusText(http.StatusNotFound),
+					},
+				})
 			})
 		})
 	})

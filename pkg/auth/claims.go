@@ -18,7 +18,11 @@ type LedgerClaims struct {
 
 // ClaimsFromContext returns an instance of LedgerClaims from context
 func ClaimsFromContext(ctx context.Context) *LedgerClaims {
-	return ctx.Value(ledgerClaimsKey).(*LedgerClaims)
+	claims := ctx.Value(ledgerClaimsKey)
+	if claims == nil {
+		return nil
+	}
+	return claims.(*LedgerClaims)
 }
 
 // ContextWithClaims creates a new context with LedgerClaims initialized

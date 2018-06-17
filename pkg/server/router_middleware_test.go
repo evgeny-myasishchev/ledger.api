@@ -158,6 +158,17 @@ func TestNewRequestIDMiddleware(t *testing.T) {
 				})(recorder, req)
 				So(nextCalled, ShouldBeTrue)
 			})
+
+			Convey("It set x-request-id response header", func() {
+				nextCalled := false
+				reqID := fmt.Sprintf("req-id-%v", fake.Characters())
+				req.Header.Add("x-request-id", reqID)
+				middleware(func(w http.ResponseWriter, mwReq *http.Request) {
+					So(w.Header().Get("x-request-id"), ShouldEqual, reqID)
+					nextCalled = true
+				})(recorder, req)
+				So(nextCalled, ShouldBeTrue)
+			})
 		})
 	})
 }

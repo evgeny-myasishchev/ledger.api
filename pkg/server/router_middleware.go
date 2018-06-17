@@ -30,6 +30,7 @@ func NewRequestIDMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		}
 		nextCtx := ContextWithRequestID(req.Context(), requestID)
 		nextCtx = logging.CreateContext(nextCtx, logger.WithField("RequestID", requestID))
+		w.Header().Add("x-request-id", requestID)
 		next(w, req.WithContext(nextCtx))
 	}
 }

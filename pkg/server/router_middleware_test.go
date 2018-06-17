@@ -219,7 +219,7 @@ func TestAuthMiddleware(t *testing.T) {
 		validator := auth.CreateHS256Validator(tokenSetup.pwd, tokenSetup.iss, tokenSetup.aud)
 		logger := logging.NewTestLogger()
 		initLogger := CreateInitLoggerMiddlewareFunc(logger)
-		authMw := CreateAuthMiddlewareFunc(validator)
+		authMw := CreateAuthMiddlewareFunc(AuthMiddlewareParams{Validator: validator})
 		middlewareFunc := func(next http.HandlerFunc) http.HandlerFunc {
 			return initLogger(authMw((next)))
 		}
@@ -293,6 +293,43 @@ func TestAuthMiddleware(t *testing.T) {
 					panic(err)
 				}
 				So(actualMessage, ShouldResemble, expectedMessage)
+			})
+
+			Convey("It should call next if route is whitelisted", func() {
+				whitelistedRoutes := []string{
+					"/v1/anonymous-allowed-route1",
+					"/v1/anonymous-allowed-route2/",
+					"/v1/anonymous-allowed-route3?hello=world",
+					"/v1/anonymous-allowed-route4",
+				}
+				authMw := CreateAuthMiddlewareFunc(AuthMiddlewareParams{
+					Validator: validator,
+					WhitelistedRoutes: map[string]bool{
+						"/v1/anonymous-allowed-route1": true,
+						"/v1/anonymous-allowed-route2": true,
+						"/v1/anonymous-allowed-route3": true,
+						"/v1/anonymous-allowed-route4": true,
+					},
+				})
+				middlewareFunc := func(next http.HandlerFunc) http.HandlerFunc {
+					return initLogger(authMw((next)))
+				}
+
+				for _, whitelistedRoute := range whitelistedRoutes {
+					req, err := http.NewRequest("GET", whitelistedRoute, nil)
+					if err != nil {
+						panic(err)
+					}
+					recorder := httptest.NewRecorder()
+					nextCalled := false
+					middleware := middlewareFunc(func(w http.ResponseWriter, req *http.Request) {
+						nextCalled = true
+					})
+					middleware(recorder, req)
+					So(nextCalled, ShouldBeTrue)
+
+				}
+
 			})
 		})
 	})

@@ -16,7 +16,12 @@ func createAuthMiddleware(cfg app.Config) server.RouterMiddlewareFunc {
 		cfg.GetString("AUTH0_ISS"),
 		cfg.GetString("AUTH0_AUD"),
 	)
-	return server.CreateAuthMiddlewareFunc(validator)
+	return server.CreateAuthMiddlewareFunc(server.AuthMiddlewareParams{
+		Validator: validator,
+		WhitelistedRoutes: map[string]bool{
+			"/v2/healthcheck/ping": true,
+		},
+	})
 }
 
 func main() {

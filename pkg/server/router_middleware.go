@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	auth0 "github.com/auth0-community/go-auth0"
 	"github.com/google/jsonapi"
 	uuid "github.com/satori/go.uuid"
 	"ledger.api/pkg/auth"
@@ -105,13 +106,39 @@ func NewLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// AuthMiddlewareParams represents params of the auth middleware
+type AuthMiddlewareParams struct {
+	Validator auth.RequestValidator
+
+	// WhitelistedRoutes is a map of routes may be called without auth token
+	// the route should be full match
+	WhitelistedRoutes map[string]bool
+}
+
 // CreateAuthMiddlewareFunc returns auth middleware func that creates auth middleware
-func CreateAuthMiddlewareFunc(validator auth.RequestValidator) RouterMiddlewareFunc {
+func CreateAuthMiddlewareFunc(params AuthMiddlewareParams) RouterMiddlewareFunc {
+	validator := params.Validator
+	whitelistedRoutes := params.WhitelistedRoutes
+	shouldWhitelist := func(err error, req *http.Request) bool {
+		if whitelistedRoutes == nil {
+			return false
+		}
+		if err != auth0.ErrTokenNotFound {
+			return false
+		}
+		path := strings.TrimRight(req.URL.Path, "/")
+		return whitelistedRoutes[path]
+	}
+
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, req *http.Request) {
 			logger := logging.FromContext(req.Context())
 			token, err := validator.ValidateRequest(req)
 			if err != nil {
+				if shouldWhitelist(err, req) {
+					next(w, req)
+					return
+				}
 				logger.WithError(err).Error("Token validation failed")
 				respondWithErrorStatus(w, http.StatusUnauthorized)
 				return

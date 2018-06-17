@@ -123,6 +123,7 @@ func respondWithError(w http.ResponseWriter, err error) {
 	if ok {
 		httpErr = *BuildHTTPErrorFromValidationError(&validationErr)
 	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpErr.Status)
 	if err := httpErr.MarshalErrors(w); err != nil {
 		panic(err)

@@ -44,17 +44,27 @@ Some useful stuff:
 docker-compose exec postgres pg_dump -U postgres ledger-dev
 ```
 
-### Testing
+### Dev/Testing
+
+Use [reflex](https://github.com/cespare/reflex) to watch changes and restart server:
+
+```
+reflex $(cat .reflex) -- go run cmd/ledger-api/main.go
+```
 
 Use `goconvey` to automatically run tests in browser.
 
-Alternatively use [fswatch](https://github.com/emcrisostomo/fswatch)
+Alternatively with the **reflex**:
 
 ```
-fswatch --filter-from .fswatch -o . | xargs -n1 -I{} go test -v
+# Run all tests
+reflex $(cat .reflex) -- go test ./... -v
 
 # Or specific package
-fswatch --filter-from .fswatch -o . | xargs -n1 -I{} go test ./pkg/server/... -v
+reflex $(cat .reflex) -- go test ./pkg/server/... -v
+
+# Or specific examples
+reflex $(cat .reflex) -- go test ./pkg/server/... -v --run TestAuthMiddleware
 ```
 
 # TODO

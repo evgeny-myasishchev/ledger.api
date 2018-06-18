@@ -31,13 +31,14 @@ func TestRoute(t *testing.T) {
 			})
 			handler := router.CreateHandler()
 
-			Convey("It should invoke provided handler", func() {
+			Convey("It should invoke provided handler and return result", func() {
 				req, _ := http.NewRequest("GET", "/v1/some-resource", nil)
 				handler.ServeHTTP(recorder, req)
 
 				So(recorder.Code, ShouldEqual, 200)
 				expectedMessage, _ := json.Marshal(JSON{"fake": "string"})
 				So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
+				So(recorder.Header().Get("content-type"), ShouldEqual, "application/json")
 			})
 
 			Convey("It set custom status code", func() {

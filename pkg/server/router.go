@@ -85,16 +85,19 @@ func (r *Router) handle(method string, path string, handler HandlerFunc) *Router
 			Logger:   logging.FromContext(req.Context()),
 		}
 		res, err := handler(req, &toolkit)
-		// TODO: Log error?
 		if err != nil {
+			toolkit.Logger.WithError(err).Error("Failed to process request")
 			respondWithError(w, err)
 		} else {
+			w.Header().Set("content-type", "application/json")
 			w.WriteHeader(res.status)
 			buffer, err := json.Marshal(res.json)
 			if err != nil {
+				toolkit.Logger.WithError(err).Error("Failed to marshal json")
 				panic(err)
 			}
 			if _, err := w.Write(buffer); err != nil {
+				toolkit.Logger.WithError(err).Error("Failed write buffer")
 				panic(err)
 			}
 		}

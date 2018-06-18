@@ -356,7 +356,7 @@ func TestRequireScopes(t *testing.T) {
 			tokenSetup, err := setupJwtToken()
 			So(err, ShouldBeNil)
 
-			mw := RequireScopes(next, strings.Split(tokenSetup.claims.Scope, ",")...)
+			mw := RequireScopes(next, strings.Split(tokenSetup.claims.Scope, " ")...)
 
 			Convey("When request context has claims", func() {
 				req = req.WithContext(auth.ContextWithClaims(req.Context(), tokenSetup.claims))

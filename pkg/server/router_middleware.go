@@ -180,7 +180,7 @@ func RequireScopes(handler HandlerFunc, scopes ...string) HandlerFunc {
 		}
 
 		authorizedScopes := make(map[string]bool)
-		for _, authorizedScope := range strings.Split(claims.Scope, ",") {
+		for _, authorizedScope := range strings.Split(claims.Scope, " ") {
 			authorizedScopes[authorizedScope] = true
 		}
 

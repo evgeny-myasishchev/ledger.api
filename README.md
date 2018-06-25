@@ -10,7 +10,8 @@ Env vars:
 
 # Dev
 
-Repo skeleton taken from (here)[https://github.com/thockin/go-build-template]
+Repo skeleton taken from (here)[https://github.com/thockin/go-build-template].
+Docker and docker-compose assumed to be installed on a dev host.
 
 ### GOPATH and sources
 

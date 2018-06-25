@@ -29,20 +29,29 @@ Clone this repo to ${GOPATH}/src/ledger.api
 Start postgres:
 
 ```
-docker-compose up -d
+docker-compose up db -d
 ```
 
-On a very first run you would also have to create db:
+On a very first run you would also have to setup a db.
+For now db schema is maintained by ledgerv1 app so schema has to be 
+initialized using v1 stuff:
 
 ```
-docker-compose exec postgres psql -U postgres -c 'CREATE DATABASE "ledger-dev"'
+# Start shell within ledgerv1 env
+docker-compose run --rm ledgerv1 bash
+
+# Setup and seed the db
+rake db:setup && rake ledger:dummy_seed
+
+# Make sure projections got fully built. For this purpose
+# start a backburner worker and wait it to cimplete it's job
+# When it's done you should see no new logs
+backburner -d && tailf log/development.log
 ```
 
-Some useful stuff:
+Optionally use pgadmin to see db structure and run queries:
 
-```
-docker-compose exec postgres pg_dump -U postgres ledger-dev
-```
+`docker-compose up -d pgadmin`
 
 ### Dev/Testing
 

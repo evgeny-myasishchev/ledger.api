@@ -3,7 +3,31 @@
 # 
 version: '3.2'
 services:
-  postgres:
-    image: postgres:9.6
+  ledgerv1:
+    image: evgenymyasishchev/ledger:develop
+    depends_on:
+      - db
+      - beanstalkd
+    environment:
+      RAILS_ENV: 'development'
+      DATABASE_HOST: db
+      BEANSTALKD_URL: beanstalk://beanstalkd:11300
+      ALPHAVANTAGE_API_KEY: ${ALPHAVANTAGE_API_KEY}
+
+  pgadmin:
+    image: dpage/pgadmin4
     ports:
-      - '5432:5432'
+      - "8080:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: dev@my-ledger.com
+      PGADMIN_DEFAULT_PASSWORD: password
+    depends_on:
+      - db
+
+  db:
+    image: postgres:9.5
+
+  beanstalkd:
+    build:
+      context: ./docker
+      dockerfile: Dockerfile.beanstalkd

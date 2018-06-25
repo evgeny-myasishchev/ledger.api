@@ -1,0 +1,4 @@
+# It's here mostly to support ledger v1
+FROM debian
+RUN apt-get update && apt-get install -y beanstalkd
+CMD ["beanstalkd"]

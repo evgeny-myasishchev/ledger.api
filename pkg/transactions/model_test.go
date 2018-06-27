@@ -3,12 +3,13 @@ package transactions
 import (
 	"context"
 	"errors"
-	"fmt"
+	"sort"
 	"testing"
 	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 	"ledger.api/pkg/internal/ledgertesting"
+	"ledger.api/pkg/tags"
 )
 
 func TestProcessSummaryQuery(t *testing.T) {
@@ -32,20 +33,41 @@ func TestProcessSummaryQuery(t *testing.T) {
 		})
 
 		FocusConvey("When type is expense", func() {
-			FocusConvey("It should calculate summary for the past month grouped by tag", func() {
-				rndTag := ledgertesting.TrxRndTag(md.TagIDs)
-				trxDate := ledgertesting.TrxDate(time.Now())
-				trxs := []ledgertesting.Transaction{
-					*ledgertesting.NewExpenseTransaction(rndTag, trxDate),
-					*ledgertesting.NewExpenseTransaction(rndTag, trxDate),
-					*ledgertesting.NewExpenseTransaction(rndTag, trxDate),
-					*ledgertesting.NewExpenseTransaction(rndTag, trxDate),
-				}
-				err := ledgertesting.SetupTransactions(DB, trxs)
-				So(err, ShouldBeNil)
+			rndTag := ledgertesting.TrxRndTag(md.TagIDs)
+			trxDate := ledgertesting.TrxDate(time.Now())
+			var trxs [100]ledgertesting.Transaction
+			for i := 0; i < 100; i++ {
+				trxs[i] = *ledgertesting.NewExpenseTransaction(rndTag, trxDate)
+			}
+			err := ledgertesting.SetupTransactions(DB, trxs[:])
+			So(err, ShouldBeNil)
+			query := summaryQuery{ledgerID: md.LedgerID, typ: "expense"}
 
-				println("==== hello =====")
-				fmt.Printf("%+v\n", md)
+			FocusConvey("It should calculate summary for the past month grouped by tag", func() {
+				expectedByTagID := make(map[int]*summaryDTO)
+				expectedResults := []summaryDTO{}
+				for _, trx := range trxs {
+					tagID := tags.GetTagIDsFromString(trx.TagIDs)[0]
+					if expectedByTagID[tagID] == nil {
+						expectedByTagID[tagID] = &summaryDTO{
+							tagID:   tagID,
+							tagName: md.TagsByID[tagID],
+							amount:  trx.Amount,
+						}
+					} else {
+						expectedByTagID[tagID].amount += trx.Amount
+					}
+				}
+				for _, v := range expectedByTagID {
+					expectedResults = append(expectedResults, *v)
+				}
+
+				sort.Slice(expectedResults, func(li, ri int) bool {
+					return expectedResults[li].amount > expectedResults[ri].amount
+				})
+				result, err := svc.processSummaryQuery(ctx, &query)
+				So(err, ShouldBeNil)
+				So(result, ShouldResemble, expectedResults)
 			})
 
 			Convey("It should not count refunds", func() {

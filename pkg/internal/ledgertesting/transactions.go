@@ -15,7 +15,7 @@ var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 // LedgerData represents ledger related data used in tests
 type LedgerData struct {
-	ledgerID   string
+	LedgerID   string
 	TagIDs     []int
 	TagsByID   map[int]string
 	TagsByName map[string]int
@@ -25,7 +25,7 @@ type LedgerData struct {
 type Transaction struct {
 	typeID     int
 	Amount     int
-	tagIDs     string
+	TagIDs     string
 	comment    string
 	date       time.Time
 	isTransfer bool
@@ -41,10 +41,10 @@ func TrxDate(date time.Time) TransactionSetup {
 	}
 }
 
-// RndTag will assign a random tag for given trx
+// TrxRndTag will assign a random tag for given trx
 func TrxRndTag(tagIDs []int) TransactionSetup {
 	return func(trx *Transaction) {
-		trx.tagIDs = fmt.Sprintf("{%v}", tagIDs[rnd.Intn(len(tagIDs))])
+		trx.TagIDs = fmt.Sprintf("{%v}", tagIDs[rnd.Intn(len(tagIDs))])
 	}
 }
 
@@ -66,7 +66,7 @@ func NewExpenseTransaction(setup ...TransactionSetup) *Transaction {
 func SetupLedgerData(db *gorm.DB) (LedgerData, error) {
 	ledgerID := uuid.NewV4().String()
 	md := LedgerData{
-		ledgerID:   ledgerID,
+		LedgerID:   ledgerID,
 		TagIDs:     make([]int, 10),
 		TagsByID:   make(map[int]string),
 		TagsByName: make(map[string]int),
@@ -108,7 +108,7 @@ func SetupTransactions(db *gorm.DB, transactions []Transaction) error {
 				is_transfer
 			)
 			VALUES(?,?,?,?,?,?,?,?)
-			`, transactionID, accountID, trx.typeID, trx.Amount, trx.tagIDs, trx.comment, trx.date, trx.isTransfer,
+			`, transactionID, accountID, trx.typeID, trx.Amount, trx.TagIDs, trx.comment, trx.date, trx.isTransfer,
 		).Error; err != nil {
 			return err
 		}

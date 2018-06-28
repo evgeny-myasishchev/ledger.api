@@ -19,12 +19,14 @@ type LedgerData struct {
 	TagIDs     []int
 	TagsByID   map[int]string
 	TagsByName map[string]int
+	AccountIDs []string
 }
 
 // Transaction represents test transaction related data to setup for tests
 type Transaction struct {
 	typeID     int
 	Amount     int
+	AccountID  string
 	TagIDs     string
 	comment    string
 	date       time.Time
@@ -45,6 +47,13 @@ func TrxDate(date time.Time) TransactionSetup {
 func TrxRndTag(tagIDs []int) TransactionSetup {
 	return func(trx *Transaction) {
 		trx.TagIDs = fmt.Sprintf("{%v}", tagIDs[rnd.Intn(len(tagIDs))])
+	}
+}
+
+// TrxRndAcc will assign a random account for given trx
+func TrxRndAcc(accountIDs []string) TransactionSetup {
+	return func(trx *Transaction) {
+		trx.AccountID = accountIDs[rnd.Intn(len(accountIDs))]
 	}
 }
 
@@ -70,6 +79,7 @@ func SetupLedgerData(db *gorm.DB) (LedgerData, error) {
 		TagIDs:     make([]int, 10),
 		TagsByID:   make(map[int]string),
 		TagsByName: make(map[string]int),
+		AccountIDs: make([]string, 10),
 	}
 
 	base := rnd.Intn(10000)
@@ -86,6 +96,26 @@ func SetupLedgerData(db *gorm.DB) (LedgerData, error) {
 			`, ledgerID, tagID, tagName).Error; err != nil {
 			return LedgerData{}, err
 		}
+
+		accountID := uuid.NewV4().String()
+		md.AccountIDs[i] = accountID
+
+		if err := db.Exec(`
+			INSERT INTO projections_accounts(
+				ledger_id,
+				aggregate_id,
+				sequential_number,
+				owner_user_id,
+				authorized_user_ids,
+				currency_code,
+				name,
+				balance,
+				is_closed
+			)
+			VALUES(?,?, ?, 0, '', 'UAH', ?, 0, false)
+			`, ledgerID, accountID, i, fmt.Sprintf("Account %v-%v", base, i)).Error; err != nil {
+			return LedgerData{}, err
+		}
 	}
 
 	return md, nil
@@ -95,7 +125,6 @@ func SetupLedgerData(db *gorm.DB) (LedgerData, error) {
 func SetupTransactions(db *gorm.DB, transactions []Transaction) error {
 	for _, trx := range transactions {
 		transactionID := uuid.NewV4().String()
-		accountID := uuid.NewV4().String()
 		if err := db.Debug().Exec(`
 			INSERT INTO projections_transactions(
 				transaction_id,
@@ -108,7 +137,7 @@ func SetupTransactions(db *gorm.DB, transactions []Transaction) error {
 				is_transfer
 			)
 			VALUES(?,?,?,?,?,?,?,?)
-			`, transactionID, accountID, trx.typeID, trx.Amount, trx.TagIDs, trx.comment, trx.date, trx.isTransfer,
+			`, transactionID, trx.AccountID, trx.typeID, trx.Amount, trx.TagIDs, trx.comment, trx.date, trx.isTransfer,
 		).Error; err != nil {
 			return err
 		}

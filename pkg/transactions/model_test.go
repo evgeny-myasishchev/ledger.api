@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"ledger.api/pkg/logging"
+
 	. "github.com/smartystreets/goconvey/convey"
 	"ledger.api/pkg/internal/ledgertesting"
 	"ledger.api/pkg/tags"
@@ -14,9 +16,9 @@ import (
 
 func TestProcessSummaryQuery(t *testing.T) {
 	svc := createQueryService(DB)
-	ctx := context.Background()
+	ctx := logging.CreateContext(context.Background(), logging.NewTestLogger())
 
-	FocusConvey("Given summaryQuery", t, func() {
+	Convey("Given summaryQuery", t, func() {
 		md, err := ledgertesting.SetupLedgerData(DB)
 		So(err, ShouldBeNil)
 
@@ -32,18 +34,19 @@ func TestProcessSummaryQuery(t *testing.T) {
 			})
 		})
 
-		FocusConvey("When type is expense", func() {
+		Convey("When type is expense", func() {
 			rndTag := ledgertesting.TrxRndTag(md.TagIDs)
+			rndAcc := ledgertesting.TrxRndAcc(md.AccountIDs)
 			trxDate := ledgertesting.TrxDate(time.Now())
 			var trxs [100]ledgertesting.Transaction
 			for i := 0; i < 100; i++ {
-				trxs[i] = *ledgertesting.NewExpenseTransaction(rndTag, trxDate)
+				trxs[i] = *ledgertesting.NewExpenseTransaction(rndTag, trxDate, rndAcc)
 			}
 			err := ledgertesting.SetupTransactions(DB, trxs[:])
 			So(err, ShouldBeNil)
 			query := summaryQuery{ledgerID: md.LedgerID, typ: "expense"}
 
-			FocusConvey("It should calculate summary for the past month grouped by tag", func() {
+			Convey("It should calculate summary for the past month grouped by tag", func() {
 				expectedByTagID := make(map[int]*summaryDTO)
 				expectedResults := []summaryDTO{}
 				for _, trx := range trxs {
@@ -65,12 +68,16 @@ func TestProcessSummaryQuery(t *testing.T) {
 				sort.Slice(expectedResults, func(li, ri int) bool {
 					return expectedResults[li].amount > expectedResults[ri].amount
 				})
-				result, err := svc.processSummaryQuery(ctx, &query)
+				actualResult, err := svc.processSummaryQuery(ctx, &query)
 				So(err, ShouldBeNil)
-				So(result, ShouldResemble, expectedResults)
+				So(len(actualResult), ShouldEqual, len(expectedResults))
+				for i, actualSummary := range actualResult {
+					expectedSummary := expectedResults[i]
+					So(expectedSummary, ShouldResemble, actualSummary)
+				}
 			})
 
-			Convey("It should not count refunds", func() {
+			Convey("It should subtract refunds from expense", func() {
 			})
 
 			Convey("It should not include transactions from other ledgers", func() {
@@ -80,6 +87,12 @@ func TestProcessSummaryQuery(t *testing.T) {
 			})
 
 			Convey("It should exclude transactions outside of date range", func() {
+			})
+		})
+
+		Convey("When account currency is other than ledger default", func() {
+			Convey("It should convert the amount to default currency prior to calculation", func() {
+
 			})
 		})
 	})

@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -48,6 +49,33 @@ func TestRoute(t *testing.T) {
 				So(recorder.Code, ShouldEqual, 503)
 				expectedMessage, _ := json.Marshal(JSON{"fake": "string"})
 				So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
+			})
+		})
+
+		Convey("When registering routes with params", func() {
+			router.RegisterRoutes(func(r *Router) {
+				r.GET("/v1/:param1/some-resource/:param2", func(req *http.Request, h *HandlerToolkit) (*Response, error) {
+					return h.JSON(JSON{
+						"param1": h.Params.ByName("param1"),
+						"param2": h.Params.ByName("param2"),
+					}), nil
+				})
+			})
+			handler := router.CreateHandler()
+
+			Convey("It should allow accessing params via handler toolkit", func() {
+				param1 := fake.Word()
+				param2 := fake.Word()
+				req, _ := http.NewRequest("GET", fmt.Sprintf("/v1/%v/some-resource/%v", param1, param2), nil)
+				handler.ServeHTTP(recorder, req)
+
+				So(recorder.Code, ShouldEqual, 200)
+				expectedMessage, _ := json.Marshal(JSON{
+					"param1": param1,
+					"param2": param2,
+				})
+				So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
+				So(recorder.Header().Get("content-type"), ShouldEqual, "application/json")
 			})
 		})
 

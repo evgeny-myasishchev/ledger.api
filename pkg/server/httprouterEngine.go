@@ -1,19 +1,27 @@
 package server
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
 	"ledger.api/pkg/logging"
 )
 
+type contextKey string
+
+const requestParamsKey contextKey = "requestParams"
+
 type httpRouterEngine struct {
 	router *httprouter.Router
 }
 
 func (engine *httpRouterEngine) Handle(method string, path string, handler http.HandlerFunc) {
-	engine.router.Handle(method, path, func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		handler.ServeHTTP(w, r)
+	engine.router.Handle(method, path, func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+
+		contextWithParams := context.WithValue(r.Context(), requestParamsKey, params)
+		reqWithParams := r.WithContext(contextWithParams)
+		handler.ServeHTTP(w, reqWithParams)
 	})
 }
 

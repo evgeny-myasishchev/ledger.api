@@ -16,6 +16,11 @@ const noRouteErrFmt = `{ "errors": [ { "status": "%v", "title": "%v" } ] }`
 
 var noRouteErrorBody = []byte(fmt.Sprintf(noRouteErrFmt, http.StatusNotFound, http.StatusText(http.StatusNotFound)))
 
+// RequestParams provides unified access for request params
+type RequestParams interface {
+	ByName(string) string
+}
+
 // JSON is a shortcup for map[string]interface{}
 type JSON map[string]interface{}
 
@@ -23,6 +28,7 @@ type JSON map[string]interface{}
 type HandlerToolkit struct {
 	validate *validator.Validate
 	Logger   logging.Logger
+	Params   RequestParams
 }
 
 // JSON - Returns JSON response object with status 200
@@ -80,9 +86,11 @@ func (r *Router) POST(relativePath string, handler HandlerFunc) *Router {
 func (r *Router) handle(method string, path string, handler HandlerFunc) *Router {
 	r.logger.Debugf("Registering route: %v %v", method, path)
 	r.engine.Handle(method, path, func(w http.ResponseWriter, req *http.Request) {
+		params := req.Context().Value(requestParamsKey).(RequestParams)
 		toolkit := HandlerToolkit{
 			validate: r.validate,
 			Logger:   logging.FromContext(req.Context()),
+			Params:   params,
 		}
 		res, err := handler(req, &toolkit)
 		if err != nil {

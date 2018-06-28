@@ -32,14 +32,14 @@ type HandlerToolkit struct {
 }
 
 // JSON - Returns JSON response object with status 200
-func (h *HandlerToolkit) JSON(obj JSON) *Response {
+func (h *HandlerToolkit) JSON(obj interface{}) *Response {
 	r := &Response{status: 200, json: obj}
 	return r
 }
 
 // Response - object that holds response data and status
 type Response struct {
-	json   JSON
+	json   interface{}
 	status int
 }
 

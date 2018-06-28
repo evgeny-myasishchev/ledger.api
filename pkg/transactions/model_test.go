@@ -15,7 +15,7 @@ import (
 )
 
 func TestProcessSummaryQuery(t *testing.T) {
-	svc := createQueryService(DB)
+	svc := CreateQueryService(DB)
 	ctx := logging.CreateContext(context.Background(), logging.NewTestLogger())
 
 	Convey("Given summaryQuery", t, func() {
@@ -53,12 +53,12 @@ func TestProcessSummaryQuery(t *testing.T) {
 					tagID := tags.GetTagIDsFromString(trx.TagIDs)[0]
 					if expectedByTagID[tagID] == nil {
 						expectedByTagID[tagID] = &summaryDTO{
-							tagID:   tagID,
-							tagName: md.TagsByID[tagID],
-							amount:  trx.Amount,
+							TagID:   tagID,
+							TagName: md.TagsByID[tagID],
+							Amount:  trx.Amount,
 						}
 					} else {
-						expectedByTagID[tagID].amount += trx.Amount
+						expectedByTagID[tagID].Amount += trx.Amount
 					}
 				}
 				for _, v := range expectedByTagID {
@@ -66,7 +66,7 @@ func TestProcessSummaryQuery(t *testing.T) {
 				}
 
 				sort.Slice(expectedResults, func(li, ri int) bool {
-					return expectedResults[li].amount > expectedResults[ri].amount
+					return expectedResults[li].Amount > expectedResults[ri].Amount
 				})
 				actualResult, err := svc.processSummaryQuery(ctx, &query)
 				So(err, ShouldBeNil)

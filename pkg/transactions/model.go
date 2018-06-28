@@ -11,9 +11,9 @@ import (
 )
 
 type summaryDTO struct {
-	tagID   int
-	tagName string
-	amount  int
+	TagID   int    `json:"tagID"`
+	TagName string `json:"tagName"`
+	Amount  int    `json:"amount"`
 }
 
 type summaryQuery struct {
@@ -60,12 +60,12 @@ func (svc *dbQueryService) processSummaryQuery(ctx context.Context, query *summa
 		if err = rows.Scan(&tagID, &tagName, &amount); err != nil {
 			return nil, err
 		}
-		result = append(result, summaryDTO{tagID: tagID, tagName: tagName, amount: amount})
+		result = append(result, summaryDTO{TagID: tagID, TagName: tagName, Amount: amount})
 	}
 	return result, nil
 }
 
-func createQueryService(db *gorm.DB) queryService {
+func CreateQueryService(db *gorm.DB) queryService {
 	svc := dbQueryService{db: db}
 	return &svc
 }

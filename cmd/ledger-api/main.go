@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"ledger.api/pkg/ledgers"
+	"ledger.api/pkg/transactions"
 
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"ledger.api/pkg/app"
@@ -34,12 +35,14 @@ func main() {
 	defer db.Close()
 
 	ledgersSvc := ledgers.CreateService(db)
+	transactonsQuerySvc := transactions.CreateQueryService(db)
 
 	handler := server.
 		CreateHTTPApp(server.HTTPAppConfig{Env: env, Logger: logger}).
 		Use(createAuthMiddleware(cfg)).
 		RegisterRoutes(app.Routes).
 		RegisterRoutes(ledgers.CreateRoutes(ledgersSvc)).
+		RegisterRoutes(transactions.CreateRoutes(transactonsQuerySvc)).
 		CreateHandler()
 
 	port := cfg.GetInt("PORT")

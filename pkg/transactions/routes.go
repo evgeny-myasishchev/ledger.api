@@ -43,16 +43,14 @@ func createSummaryQueryHandler(svc queryService) server.HandlerFunc {
 		if err != nil {
 			return nil, err
 		}
-		query := summaryQuery{
-			ledgerID: ledgerID,
-			typ:      typ,
-			from:     from,
-			to:       to,
-		}
+		query := newSummaryQuery(ledgerID, typ, func(q *summaryQuery) {
+			q.from = from
+			q.to = to
+		})
 		if val := req.URL.Query().Get("excludeTagIDs"); val != "" {
 			query.excludeTagIDs = strings.Split(val, ",")
 		}
-		result, err := svc.processSummaryQuery(req.Context(), &query)
+		result, err := svc.processSummaryQuery(req.Context(), query)
 		if err != nil {
 			return nil, err
 		}

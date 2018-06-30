@@ -24,6 +24,21 @@ type summaryQuery struct {
 	excludeTagIDs []string
 }
 
+func newSummaryQuery(ledgerID string, typ string, queryInit ...func(*summaryQuery)) *summaryQuery {
+	now := time.Now()
+	from := now.AddDate(0, -1, 0)
+	query := &summaryQuery{
+		ledgerID: ledgerID,
+		typ:      typ,
+		from:     &from,
+		to:       &now,
+	}
+	for _, initFn := range queryInit {
+		initFn(query)
+	}
+	return query
+}
+
 type queryService interface {
 	processSummaryQuery(ctx context.Context, query *summaryQuery) ([]summaryDTO, error)
 }
@@ -42,14 +57,29 @@ func (svc *dbQueryService) processSummaryQuery(ctx context.Context, query *summa
 	logger := logging.FromContext(ctx)
 	logger.Debugf("Processing summary query. LedgerID: %v", query.ledgerID)
 	result := []summaryDTO{}
+
+	from := query.from
+	if from == nil {
+		from = &time.Time{}
+	}
+	to := query.to
+	if to == nil {
+		now := time.Now()
+		to = &now
+	}
+
 	rows, err := svc.db.Raw(`
 		SELECT tg.tag_id tagID, tg.name tagName, SUM(trx.amount) amount
 		FROM projections_transactions trx
-			JOIN projections_accounts acc ON acc.aggregate_id = trx.account_id
-			JOIN projections_tags tg ON trx.tag_ids LIKE '%{'||tg.tag_id||'}%'
+			JOIN projections_accounts acc 
+				ON acc.aggregate_id = trx.account_id
+			JOIN projections_tags tg 
+				ON tg.ledger_id = acc.ledger_id AND trx.tag_ids LIKE '%{'||tg.tag_id||'}%'
 		WHERE acc.ledger_id = ?
+			AND trx.date >= ? 
+			AND trx.date <= ?
 		GROUP BY tg.tag_id, tg.name
-		ORDER BY amount DESC`, query.ledgerID).Rows()
+		ORDER BY amount DESC`, query.ledgerID, from, to).Rows()
 	if err != nil {
 		return nil, err
 	}

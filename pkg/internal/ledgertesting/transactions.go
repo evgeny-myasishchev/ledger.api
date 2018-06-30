@@ -29,7 +29,7 @@ type Transaction struct {
 	AccountID  string
 	TagIDs     string
 	comment    string
-	date       time.Time
+	Date       time.Time
 	isTransfer bool
 }
 
@@ -39,7 +39,15 @@ type TransactionSetup func(*Transaction)
 // TrxDate setup transaction for given date
 func TrxDate(date time.Time) TransactionSetup {
 	return func(trx *Transaction) {
-		trx.date = date
+		trx.Date = date
+	}
+}
+
+// TrxRndDate setup transaction with random date from given range
+func TrxRndDate(min time.Time, max time.Time) TransactionSetup {
+	diff := max.Unix() - min.Unix()
+	return func(trx *Transaction) {
+		trx.Date = time.Unix(min.Unix()+rnd.Int63n(diff), 0)
 	}
 }
 
@@ -62,7 +70,7 @@ func NewExpenseTransaction(setup ...TransactionSetup) *Transaction {
 	trx := Transaction{
 		typeID:  2,
 		Amount:  1000 + rnd.Intn(100000),
-		date:    time.Now(),
+		Date:    time.Now(),
 		comment: fmt.Sprintf("Test income trx %v", fake.Word()),
 	}
 	for _, setupFn := range setup {
@@ -90,10 +98,7 @@ func SetupLedgerData(db *gorm.DB) (LedgerData, error) {
 		md.TagsByID[tagID] = tagName
 		md.TagsByName[tagName] = tagID
 
-		if err := db.Exec(`
-			INSERT INTO projections_tags(ledger_id, tag_id, name, authorized_user_ids)
-			VALUES(?,?,?,'')
-			`, ledgerID, tagID, tagName).Error; err != nil {
+		if err := SetupTag(db, ledgerID, tagID, tagName); err != nil {
 			return LedgerData{}, err
 		}
 
@@ -121,6 +126,14 @@ func SetupLedgerData(db *gorm.DB) (LedgerData, error) {
 	return md, nil
 }
 
+// SetupTag will insert a new tag into tags projection
+func SetupTag(db *gorm.DB, ledgerID string, tagID int, tagName string) error {
+	return db.Exec(`
+		INSERT INTO projections_tags(ledger_id, tag_id, name, authorized_user_ids)
+		VALUES(?,?,?,'')
+		`, ledgerID, tagID, tagName).Error
+}
+
 // SetupTransactions persist mock transactions to db
 func SetupTransactions(db *gorm.DB, transactions []Transaction) error {
 	for _, trx := range transactions {
@@ -137,7 +150,7 @@ func SetupTransactions(db *gorm.DB, transactions []Transaction) error {
 				is_transfer
 			)
 			VALUES(?,?,?,?,?,?,?,?)
-			`, transactionID, trx.AccountID, trx.typeID, trx.Amount, trx.TagIDs, trx.comment, trx.date, trx.isTransfer,
+			`, transactionID, trx.AccountID, trx.typeID, trx.Amount, trx.TagIDs, trx.comment, trx.Date, trx.isTransfer,
 		).Error; err != nil {
 			return err
 		}

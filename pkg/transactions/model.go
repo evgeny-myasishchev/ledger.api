@@ -17,11 +17,11 @@ type summaryDTO struct {
 }
 
 type summaryQuery struct {
-	ledgerID    string
-	typ         string
-	from        *time.Time
-	to          *time.Time
-	excludeTags []int
+	ledgerID      string
+	typ           string
+	from          *time.Time
+	to            *time.Time
+	excludeTagIDs []string
 }
 
 type queryService interface {

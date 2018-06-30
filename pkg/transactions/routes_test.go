@@ -8,6 +8,8 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -16,6 +18,7 @@ import (
 	"github.com/icrowley/fake"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"ledger.api/pkg/internal/ledgertesting"
 	"ledger.api/pkg/server"
 )
 
@@ -81,6 +84,32 @@ func TestTransactionsRoutes(t *testing.T) {
 					expectedMessage, _ := json.Marshal(queryCall.result)
 					So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
 					So(recorder.Header().Get("content-type"), ShouldEqual, "application/json")
+				})
+
+				Convey("It should use query string params", func() {
+					from := ledgertesting.RandomDate()
+					to := ledgertesting.RandomDate()
+					qs := url.Values{}
+					qs.Add("from", from.Format(time.RFC3339))
+					qs.Add("to", to.Format(time.RFC3339))
+
+					excludeTagIDs := []string{fake.Word(), fake.Word(), fake.Word()}
+					qs.Add("excludeTagIDs", strings.Join(excludeTagIDs, ","))
+
+					url := fmt.Sprintf("/v2/ledgers/%v/transactions/%v/summary?%v", ledgerID, typ, qs.Encode())
+					req, _ := http.NewRequest("GET", url, nil)
+					router.CreateHandler().ServeHTTP(recorder, req)
+					So(recorder.Code, ShouldEqual, 200)
+					So(len(svc.processSummaryQueryCalls), ShouldEqual, 1)
+					queryCall := svc.processSummaryQueryCalls[0]
+
+					inputQuery := queryCall.input.([]interface{})[0].(*summaryQuery)
+					So(inputQuery.from, ShouldNotBeNil)
+					So(inputQuery.from.Format(time.RFC3339), ShouldEqual, from.Format(time.RFC3339))
+
+					So(inputQuery.to, ShouldNotBeNil)
+					So(inputQuery.to.Format(time.RFC3339), ShouldEqual, to.Format(time.RFC3339))
+					So(inputQuery.excludeTagIDs, ShouldResemble, excludeTagIDs)
 				})
 
 				Convey("It should respond with error if query fails", func() {

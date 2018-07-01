@@ -13,7 +13,7 @@ import (
 	"ledger.api/pkg/logging"
 
 	. "github.com/smartystreets/goconvey/convey"
-	"ledger.api/pkg/internal/ledgertesting"
+	"ledger.api/pkg/internal/ldtesting"
 	"ledger.api/pkg/tags"
 )
 
@@ -38,7 +38,7 @@ func TestProcessSummaryQuery(t *testing.T) {
 	ctx := logging.CreateContext(context.Background(), logging.NewTestLogger())
 
 	Convey("Given summaryQuery", t, func() {
-		md, err := ledgertesting.SetupLedgerData(DB)
+		md, err := ldtesting.SetupLedgerData(DB)
 		So(err, ShouldBeNil)
 
 		Convey("When required parameters are missing", func() {
@@ -54,16 +54,16 @@ func TestProcessSummaryQuery(t *testing.T) {
 		})
 
 		Convey("When type is expense", func() {
-			rndTag := ledgertesting.TrxRndTag(md.TagIDs)
-			rndAcc := ledgertesting.TrxRndAcc(md.AccountIDs)
+			rndTag := ldtesting.TrxRndTag(md.TagIDs)
+			rndAcc := ldtesting.TrxRndAcc(md.AccountIDs)
 			dateMax := time.Now()
 			dateMin := dateMax.AddDate(0, -1, 0)
-			trxDate := ledgertesting.TrxRndDate(dateMin, dateMax)
-			var trxs [100]ledgertesting.Transaction
+			trxDate := ldtesting.TrxRndDate(dateMin, dateMax)
+			var trxs [100]ldtesting.Transaction
 			for i := 0; i < 100; i++ {
-				trxs[i] = *ledgertesting.NewExpenseTransaction(rndTag, trxDate, rndAcc)
+				trxs[i] = *ldtesting.NewExpenseTransaction(rndTag, trxDate, rndAcc)
 			}
-			err := ledgertesting.SetupTransactions(DB, trxs[:])
+			err := ldtesting.SetupTransactions(DB, trxs[:])
 			So(err, ShouldBeNil)
 			query := summaryQuery{ledgerID: md.LedgerID, typ: "expense"}
 
@@ -108,10 +108,10 @@ func TestProcessSummaryQuery(t *testing.T) {
 
 				zeroTagID1 := maxTagID + rnd.Intn(2000)
 				zeroTagID2 := maxTagID + rnd.Intn(2000)
-				if err := ledgertesting.SetupTag(DB, md.LedgerID, zeroTagID1, "zero tag 1"); err != nil {
+				if err := ldtesting.SetupTag(DB, md.LedgerID, zeroTagID1, "zero tag 1"); err != nil {
 					So(err, ShouldBeNil)
 				}
-				if err := ledgertesting.SetupTag(DB, md.LedgerID, zeroTagID2, "zero tag 2"); err != nil {
+				if err := ldtesting.SetupTag(DB, md.LedgerID, zeroTagID2, "zero tag 2"); err != nil {
 					So(err, ShouldBeNil)
 				}
 
@@ -133,26 +133,26 @@ func TestProcessSummaryQuery(t *testing.T) {
 				}
 				tagID1 := maxTagID + rnd.Intn(2000)
 				tagID2 := maxTagID + rnd.Intn(2000)
-				if err := ledgertesting.SetupTag(DB, md.LedgerID, tagID1, "tag outside 1"); err != nil {
+				if err := ldtesting.SetupTag(DB, md.LedgerID, tagID1, "tag outside 1"); err != nil {
 					So(err, ShouldBeNil)
 				}
-				if err := ledgertesting.SetupTag(DB, md.LedgerID, tagID2, "tag outside 2"); err != nil {
+				if err := ldtesting.SetupTag(DB, md.LedgerID, tagID2, "tag outside 2"); err != nil {
 					So(err, ShouldBeNil)
 				}
 
-				rndTagsOutside := ledgertesting.TrxRndTag([]int{tagID1, tagID2})
+				rndTagsOutside := ldtesting.TrxRndTag([]int{tagID1, tagID2})
 
-				trx1 := ledgertesting.NewExpenseTransaction(
+				trx1 := ldtesting.NewExpenseTransaction(
 					rndTagsOutside,
-					ledgertesting.TrxRndDate(dateMin.AddDate(0, -2, 0), dateMin.AddDate(0, 0, -1)),
+					ldtesting.TrxRndDate(dateMin.AddDate(0, -2, 0), dateMin.AddDate(0, 0, -1)),
 					rndAcc,
 				)
-				trx2 := ledgertesting.NewExpenseTransaction(
+				trx2 := ldtesting.NewExpenseTransaction(
 					rndTagsOutside,
-					ledgertesting.TrxRndDate(dateMax.AddDate(0, 0, 1), dateMax.AddDate(0, 1, 0)),
+					ldtesting.TrxRndDate(dateMax.AddDate(0, 0, 1), dateMax.AddDate(0, 1, 0)),
 					rndAcc,
 				)
-				err := ledgertesting.SetupTransactions(DB, []ledgertesting.Transaction{
+				err := ldtesting.SetupTransactions(DB, []ldtesting.Transaction{
 					*trx1,
 					*trx2,
 				})

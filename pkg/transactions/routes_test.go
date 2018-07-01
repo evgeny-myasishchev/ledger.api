@@ -18,7 +18,7 @@ import (
 	"github.com/icrowley/fake"
 
 	. "github.com/smartystreets/goconvey/convey"
-	"ledger.api/pkg/internal/ledgertesting"
+	"ledger.api/pkg/internal/ldtesting"
 	"ledger.api/pkg/server"
 )
 
@@ -87,8 +87,8 @@ func TestTransactionsRoutes(t *testing.T) {
 				})
 
 				Convey("It should use query string params", func() {
-					from := ledgertesting.RandomDate()
-					to := ledgertesting.RandomDate()
+					from := ldtesting.RandomDate()
+					to := ldtesting.RandomDate()
 					qs := url.Values{}
 					qs.Add("from", from.Format(time.RFC3339))
 					qs.Add("to", to.Format(time.RFC3339))

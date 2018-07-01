@@ -13,13 +13,20 @@ Env vars:
 Repo skeleton taken from (here)[https://github.com/thockin/go-build-template].
 Docker and docker-compose assumed to be installed on a dev host.
 
-### GOPATH and sources
+### go
+
+Requires go **1.10**
+
+Assume gvm and direnv is unused.
 
 Setup GOPATH dir (for example here ~/projects/go):
 
-Assume direnv is unused. Create .envrc:
+Create .envrc:
 ```
+. $GVM_ROOT/scripts/gvm-default
+gvm use 1.10
 export GOPATH=${PWD}:${GOPATH}
+export PATH=${PWD}/bin:${PATH}
 ```
 and don't forget `direnv allow .`
 

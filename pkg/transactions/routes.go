@@ -54,6 +54,6 @@ func createSummaryQueryHandler(svc queryService) server.HandlerFunc {
 		if err != nil {
 			return nil, err
 		}
-		return h.JSON(result), nil
+		return h.Response(result), nil
 	}
 }

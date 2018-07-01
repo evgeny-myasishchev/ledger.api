@@ -12,5 +12,5 @@ func Routes(router *server.Router) {
 }
 
 func handlePing(req *http.Request, h *server.HandlerToolkit) (*server.Response, error) {
-	return h.JSON(server.JSON{"message": "pong"}), nil
+	return h.Response(server.JSON{"message": "pong"}), nil
 }

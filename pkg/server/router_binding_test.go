@@ -29,7 +29,7 @@ func TestBindingAndValidation(t *testing.T) {
 			r.POST("/v1/persons", func(req *http.Request, h *HandlerToolkit) (*Response, error) {
 				err := h.Bind(req, &receivedPerson)
 				h.Logger.Infof("Bound person %v %v", err, receivedPerson)
-				return h.JSON(nil), err
+				return h.Response(nil), err
 			})
 		})
 

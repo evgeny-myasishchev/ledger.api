@@ -24,10 +24,10 @@ func TestRoute(t *testing.T) {
 		Convey("When registering routes", func() {
 			router.RegisterRoutes(func(r *Router) {
 				r.GET("/v1/some-resource", func(req *http.Request, h *HandlerToolkit) (*Response, error) {
-					return h.JSON(JSON{"fake": "string"}), nil
+					return h.Response(JSON{"fake": "string"}), nil
 				})
 				r.GET("/v1/some-resource/503", func(req *http.Request, h *HandlerToolkit) (*Response, error) {
-					return h.JSON(JSON{"fake": "string"}).Status(503), nil
+					return h.Response(JSON{"fake": "string"}).Status(503), nil
 				})
 			})
 			handler := router.CreateHandler()
@@ -55,7 +55,7 @@ func TestRoute(t *testing.T) {
 		Convey("When registering routes with params", func() {
 			router.RegisterRoutes(func(r *Router) {
 				r.GET("/v1/:param1/some-resource/:param2", func(req *http.Request, h *HandlerToolkit) (*Response, error) {
-					return h.JSON(JSON{
+					return h.Response(JSON{
 						"param1": h.Params.ByName("param1"),
 						"param2": h.Params.ByName("param2"),
 					}), nil

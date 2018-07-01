@@ -31,15 +31,15 @@ type HandlerToolkit struct {
 	Params   RequestParams
 }
 
-// JSON - Returns JSON response object with status 200
-func (h *HandlerToolkit) JSON(obj interface{}) *Response {
-	r := &Response{status: 200, json: obj}
+// Response - Returns Response response object with status 200
+func (h *HandlerToolkit) Response(obj interface{}) *Response {
+	r := &Response{status: 200, data: obj}
 	return r
 }
 
 // Response - object that holds response data and status
 type Response struct {
-	json   interface{}
+	data   interface{}
 	status int
 }
 
@@ -99,7 +99,7 @@ func (r *Router) handle(method string, path string, handler HandlerFunc) *Router
 		} else {
 			w.Header().Set("content-type", "application/json")
 			w.WriteHeader(res.status)
-			buffer, err := json.Marshal(res.json)
+			buffer, err := json.Marshal(res.data)
 			if err != nil {
 				toolkit.Logger.WithError(err).Error("Failed to marshal json")
 				panic(err)

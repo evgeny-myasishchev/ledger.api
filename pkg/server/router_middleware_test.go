@@ -30,10 +30,10 @@ func TestRouteMiddleware(t *testing.T) {
 		app.RegisterRoutes(func(r *Router) {
 			r.handle("GET", "/v1/some-resource", func(req *http.Request, h *HandlerToolkit) (*Response, error) {
 				handlerCalled = true
-				return h.JSON(JSON{"fake": "string"}), nil
+				return h.Response(JSON{"fake": "string"}), nil
 			})
 			r.handle("GET", "/v1/should-abort", func(req *http.Request, h *HandlerToolkit) (*Response, error) {
-				return h.JSON(JSON{"fake": "string"}), nil
+				return h.Response(JSON{"fake": "string"}), nil
 			})
 		})
 
@@ -73,7 +73,7 @@ func TestRouteMiddleware(t *testing.T) {
 						h.Logger.Info("Processing actual route handler")
 						So(callCount, ShouldEqual, 3)
 						callCount++
-						return h.JSON(JSON{"fake": "string"}), nil
+						return h.Response(JSON{"fake": "string"}), nil
 					})
 				})
 
@@ -350,7 +350,7 @@ func TestRequireScopes(t *testing.T) {
 			nextRes := JSON{"fake": fake.Characters()}
 			next := func(handlerReq *http.Request, h *HandlerToolkit) (*Response, error) {
 				nextCalled = true
-				return h.JSON(nextRes), nil
+				return h.Response(nextRes), nil
 			}
 
 			tokenSetup, err := setupJwtToken()
@@ -364,7 +364,7 @@ func TestRequireScopes(t *testing.T) {
 					res, err := mw(req, &toolkit)
 					So(err, ShouldBeNil)
 					So(nextCalled, ShouldBeTrue)
-					So(res.json, ShouldEqual, nextRes)
+					So(res.data, ShouldEqual, nextRes)
 				})
 
 				Convey("It should respond with 403 if some scope is missing", func() {

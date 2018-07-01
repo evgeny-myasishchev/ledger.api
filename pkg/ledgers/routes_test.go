@@ -24,7 +24,7 @@ func TestCreateRoute(t *testing.T) {
 			req, _ := http.NewRequest("POST", "/v2/ledgers", nil)
 			router.CreateHandler().ServeHTTP(recorder, req)
 
-			Convey("It should save the ledger", func() {
+			SkipConvey("It should save the ledger", func() {
 
 			})
 
@@ -32,7 +32,7 @@ func TestCreateRoute(t *testing.T) {
 				So(recorder.Code, ShouldEqual, 200)
 			})
 
-			Convey("It should respond with ledger details", func() {
+			SkipConvey("It should respond with ledger details", func() {
 
 			})
 		})

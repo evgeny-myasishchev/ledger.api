@@ -15,9 +15,9 @@ func CreateRoutes(ledgerSvc Service) server.Routes {
 }
 
 func handleGetLedgers(req *http.Request, h *server.HandlerToolkit) (*server.Response, error) {
-	return h.JSON(server.JSON{}), nil
+	return h.Response(server.JSON{}), nil
 }
 
 func handleCreateLedger(req *http.Request, h *server.HandlerToolkit) (*server.Response, error) {
-	return h.JSON(server.JSON{}), nil
+	return h.Response(server.JSON{}), nil
 }

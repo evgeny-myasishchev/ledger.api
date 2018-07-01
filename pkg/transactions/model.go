@@ -39,7 +39,8 @@ func newSummaryQuery(ledgerID string, typ string, queryInit ...func(*summaryQuer
 	return query
 }
 
-type queryService interface {
+// QueryService is a service to do various gueries against transactions
+type QueryService interface {
 	processSummaryQuery(ctx context.Context, query *summaryQuery) ([]summaryDTO, error)
 }
 
@@ -95,7 +96,8 @@ func (svc *dbQueryService) processSummaryQuery(ctx context.Context, query *summa
 	return result, nil
 }
 
-func CreateQueryService(db *gorm.DB) queryService {
+// CreateQueryService initializes a new instance of the query service
+func CreateQueryService(db *gorm.DB) QueryService {
 	svc := dbQueryService{db: db}
 	return &svc
 }

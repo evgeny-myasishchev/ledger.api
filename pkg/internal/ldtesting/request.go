@@ -38,7 +38,7 @@ func NewRequest(method string, url string, opts ...RequestOption) *http.Request 
 		req = req.WithContext(
 			auth.ContextWithClaims(
 				req.Context(),
-				&auth.LedgerClaims{Scope: "read:ledgers write:ledgers"},
+				&auth.LedgerClaims{Scope: reqOpts.scope},
 			))
 	}
 

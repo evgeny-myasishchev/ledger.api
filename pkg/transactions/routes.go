@@ -14,8 +14,7 @@ func CreateRoutes(svc QueryService) server.Routes {
 		router.GET(
 			// from=:from&to=:to&excludeTags=:excludeTagIDs
 			"/v2/ledgers/:ledgerID/transactions/:type/summary",
-			// server.RequireScopes(processSummaryQuery, "read:transactions"),
-			createSummaryQueryHandler(svc),
+			server.RequireScopes(createSummaryQueryHandler(svc), "read:transactions"),
 		)
 	}
 }

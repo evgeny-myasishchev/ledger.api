@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
@@ -68,9 +67,10 @@ func TestTransactionsRoutes(t *testing.T) {
 		ledgerID := uuid.NewV4().String()
 		typ := fake.Word()
 		Convey("When route is processSummaryQuery", func() {
-			req, _ := http.NewRequest("GET", fmt.Sprintf("/v2/ledgers/%v/transactions/%v/summary", ledgerID, typ), nil)
+			path := fmt.Sprintf("/v2/ledgers/%v/transactions/%v/summary", ledgerID, typ)
 
-			Convey("And user is authenticated", func() {
+			Convey("And user is authorized", func() {
+				req := ldtesting.NewRequest("GET", path, ldtesting.WithScopeClaim("read:transactions"))
 				Convey("It should process query and return summary data", func() {
 					router.CreateHandler().ServeHTTP(recorder, req)
 					So(recorder.Code, ShouldEqual, 200)
@@ -97,7 +97,7 @@ func TestTransactionsRoutes(t *testing.T) {
 					qs.Add("excludeTagIDs", strings.Join(excludeTagIDs, ","))
 
 					url := fmt.Sprintf("/v2/ledgers/%v/transactions/%v/summary?%v", ledgerID, typ, qs.Encode())
-					req, _ := http.NewRequest("GET", url, nil)
+					req := ldtesting.NewRequest("GET", url, ldtesting.WithScopeClaim("read:transactions"))
 					router.CreateHandler().ServeHTTP(recorder, req)
 					So(recorder.Code, ShouldEqual, 200)
 					So(len(svc.processSummaryQueryCalls), ShouldEqual, 1)
@@ -119,6 +119,14 @@ func TestTransactionsRoutes(t *testing.T) {
 					router.CreateHandler().ServeHTTP(recorder, req.WithContext(failCtx))
 					So(recorder.Code, ShouldEqual, 500)
 					So(len(svc.processSummaryQueryCalls), ShouldEqual, 1)
+				})
+			})
+
+			Convey("And user is not authorized", func() {
+				req := ldtesting.NewRequest("GET", path, ldtesting.WithScopeClaim("none"))
+				Convey("It should reject with 403", func() {
+					router.CreateHandler().ServeHTTP(recorder, req)
+					So(recorder.Code, ShouldEqual, 403)
 				})
 			})
 		})

@@ -63,12 +63,13 @@ func TestProcessSummaryQuery(t *testing.T) {
 			var trxs [100]ldtesting.Transaction
 			for i := 0; i < 100; i++ {
 				trxs[i] = *ldtesting.NewExpenseTransaction(rndTag, trxDate, rndAcc)
+				// TODO: Add some income as well to make sure it's excluded
 			}
 			err := ldtesting.SetupTransactions(DB, trxs[:])
 			So(err, ShouldBeNil)
 			query := summaryQuery{ledgerID: md.LedgerID, typ: "expense"}
 
-			Convey("It should calculate summary grouped by tag", func() {
+			Convey("It should calculate summary expenses grouped by tag", func() {
 				expectedByTagID := make(map[int]*summaryDTO)
 				expectedResults := []summaryDTO{}
 				for _, trx := range trxs {

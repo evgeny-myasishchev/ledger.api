@@ -69,18 +69,25 @@ func (svc *dbQueryService) processSummaryQuery(ctx context.Context, query *summa
 		to = &now
 	}
 
-	rows, err := svc.db.Raw(`
-		SELECT tg.tag_id tagID, tg.name tagName, SUM(trx.amount) amount
-		FROM projections_transactions trx
-			JOIN projections_accounts acc 
-				ON acc.aggregate_id = trx.account_id
-			JOIN projections_tags tg 
-				ON tg.ledger_id = acc.ledger_id AND trx.tag_ids LIKE '%{'||tg.tag_id||'}%'
-		WHERE acc.ledger_id = ?
-			AND trx.date >= ? 
-			AND trx.date <= ?
-		GROUP BY tg.tag_id, tg.name
-		ORDER BY amount DESC`, query.ledgerID, from, to).Rows()
+	dbQuery := svc.db.Table("projections_transactions trx").
+		Select("tg.tag_id tagID, tg.name tagName, SUM(trx.amount) amount").
+		Joins("JOIN projections_accounts acc ON acc.aggregate_id = trx.account_id").
+		Joins("JOIN projections_tags tg ON tg.ledger_id = acc.ledger_id AND trx.tag_ids LIKE '%{'||tg.tag_id||'}%'").
+		Where("acc.ledger_id = ?", query.ledgerID).
+		Where("trx.date >= ? AND trx.date <= ?", from, to)
+
+	if query.excludeTagIDs != nil {
+		dbQuery = dbQuery.Where("tg.tag_id NOT IN (?)", query.excludeTagIDs)
+	}
+
+	dbQuery = dbQuery.
+		Group("tg.tag_id, tg.name").
+		Order("amount DESC")
+
+	logger.WithField("query", dbQuery.QueryExpr()).Debugf("Executing transactions summary query")
+
+	rows, err := dbQuery.Rows()
+
 	if err != nil {
 		return nil, err
 	}

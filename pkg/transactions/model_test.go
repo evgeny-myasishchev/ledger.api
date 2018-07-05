@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sort"
+	"strconv"
 	"testing"
 	"time"
 
@@ -168,13 +169,56 @@ func TestProcessSummaryQuery(t *testing.T) {
 				}
 			})
 
+			Convey("It should exclude provided tags", func() {
+				expectedByTagID := make(map[int]*summaryDTO)
+				expectedResults := []summaryDTO{}
+				tagsToExcludeMap := make(map[int]bool)
+				tagsToExclude := []string{}
+				for len(tagsToExclude) <= 2 {
+					trx := trxs[rnd.Intn(len(trxs))]
+					tagID := tags.GetTagIDsFromString(trx.TagIDs)[0]
+					if _, ok := tagsToExcludeMap[tagID]; !ok {
+						tagsToExcludeMap[tagID] = true
+						tagsToExclude = append(tagsToExclude, strconv.Itoa(tagID))
+					}
+				}
+
+				for _, trx := range trxs {
+					tagID := tags.GetTagIDsFromString(trx.TagIDs)[0]
+					if _, ok := tagsToExcludeMap[tagID]; ok {
+						continue
+					}
+					if expectedByTagID[tagID] == nil {
+						expectedByTagID[tagID] = &summaryDTO{
+							TagID:   tagID,
+							TagName: md.TagsByID[tagID],
+							Amount:  trx.Amount,
+						}
+					} else {
+						expectedByTagID[tagID].Amount += trx.Amount
+					}
+				}
+				for _, v := range expectedByTagID {
+					expectedResults = append(expectedResults, *v)
+				}
+
+				sort.Slice(expectedResults, func(li, ri int) bool {
+					return expectedResults[li].Amount > expectedResults[ri].Amount
+				})
+				query.excludeTagIDs = tagsToExclude
+				actualResult, err := svc.processSummaryQuery(ctx, &query)
+				So(err, ShouldBeNil)
+				So(len(actualResult), ShouldEqual, len(expectedResults))
+				for i, actualSummary := range actualResult {
+					expectedSummary := expectedResults[i]
+					So(expectedSummary, ShouldResemble, actualSummary)
+				}
+			})
+
 			Convey("It should subtract refunds from expense", func() {
 			})
 
 			Convey("It should not include transactions from other ledgers", func() {
-			})
-
-			Convey("It should exclude provided tags", func() {
 			})
 		})
 

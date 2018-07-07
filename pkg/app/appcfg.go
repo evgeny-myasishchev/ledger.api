@@ -23,7 +23,7 @@ func setDefaults(cfg *viper.Viper) *viper.Viper {
 	}
 
 	cfg.SetDefault("APP_ENV", "dev")
-	cfg.SetDefault("DB_URL", fmt.Sprintf("host=localhost port=5432 user=postgres dbname=%v sslmode=disable", defaultDB))
+	cfg.SetDefault("DB_URL", fmt.Sprintf("postgresql://postgres@localhost:5432/%v?sslmode=disable", defaultDB))
 	cfg.SetDefault("PORT", 3000)
 	cfg.SetDefault("AUTH0_AUD", "https://staging.api.my-ledger.com")
 	cfg.SetDefault("AUTH0_ISS", "https://ledger-staging.eu.auth0.com/")

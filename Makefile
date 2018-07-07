@@ -41,7 +41,7 @@ docker-shell:  docker-build
 # 		-w /go/src/$(PKG) \
 # 		$(IMAGE):$(VERSION) sh
 
-docker-push: push-name
+docker-push: docker-build
 	@docker push $(IMAGE):$(VERSION)
 	@echo "pushed: $(IMAGE):$(VERSION)"
 

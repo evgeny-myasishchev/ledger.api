@@ -24,13 +24,14 @@ type LedgerData struct {
 
 // Transaction represents test transaction related data to setup for tests
 type Transaction struct {
-	typeID     int
-	Amount     int
-	AccountID  string
-	TagIDs     string
-	comment    string
-	Date       time.Time
-	isTransfer bool
+	TransactionID string
+	typeID        int // income=1, expense=2, refund=3
+	Amount        int
+	AccountID     string
+	TagIDs        string
+	comment       string
+	Date          time.Time
+	isTransfer    bool
 }
 
 // TransactionSetup fn to setup transaction
@@ -65,13 +66,19 @@ func TrxRndAcc(accountIDs []string) TransactionSetup {
 	}
 }
 
-// NewExpenseTransaction creates a new mock transaction structure
-func NewExpenseTransaction(setup ...TransactionSetup) *Transaction {
+// TrxIncome will set income type for given transaction
+func TrxIncome(trx *Transaction) {
+	trx.typeID = 1
+}
+
+// NewTransaction creates a new mock transaction structure
+func NewTransaction(setup ...TransactionSetup) *Transaction {
 	trx := Transaction{
-		typeID:  2,
-		Amount:  1000 + rnd.Intn(100000),
-		Date:    time.Now(),
-		comment: fmt.Sprintf("Test income trx %v", fake.Word()),
+		TransactionID: uuid.NewV4().String(),
+		typeID:        2,
+		Amount:        1000 + rnd.Intn(100000),
+		Date:          time.Now(),
+		comment:       fmt.Sprintf("Test trx %v", fake.Word()),
 	}
 	for _, setupFn := range setup {
 		setupFn(&trx)
@@ -137,7 +144,6 @@ func SetupTag(db *gorm.DB, ledgerID string, tagID int, tagName string) error {
 // SetupTransactions persist mock transactions to db
 func SetupTransactions(db *gorm.DB, transactions []Transaction) error {
 	for _, trx := range transactions {
-		transactionID := uuid.NewV4().String()
 		if err := db.Debug().Exec(`
 			INSERT INTO projections_transactions(
 				transaction_id,
@@ -150,7 +156,7 @@ func SetupTransactions(db *gorm.DB, transactions []Transaction) error {
 				is_transfer
 			)
 			VALUES(?,?,?,?,?,?,?,?)
-			`, transactionID, trx.AccountID, trx.typeID, trx.Amount, trx.TagIDs, trx.comment, trx.Date, trx.isTransfer,
+			`, trx.TransactionID, trx.AccountID, trx.typeID, trx.Amount, trx.TagIDs, trx.comment, trx.Date, trx.isTransfer,
 		).Error; err != nil {
 			return err
 		}

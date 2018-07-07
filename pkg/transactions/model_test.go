@@ -62,16 +62,53 @@ func TestProcessSummaryQuery(t *testing.T) {
 			trxDate := ldtesting.TrxRndDate(dateMin, dateMax)
 			var trxs [100]ldtesting.Transaction
 			for i := 0; i < 100; i++ {
-				trxs[i] = *ldtesting.NewExpenseTransaction(rndTag, trxDate, rndAcc)
+				trxs[i] = *ldtesting.NewTransaction(rndTag, trxDate, rndAcc)
 				// TODO: Add some income as well to make sure it's excluded
 			}
 			err := ldtesting.SetupTransactions(DB, trxs[:])
 			So(err, ShouldBeNil)
 			query := summaryQuery{ledgerID: md.LedgerID, typ: "expense"}
 
-			Convey("It should calculate summary expenses grouped by tag", func() {
+			Convey("It should calculate summary grouped by tag", func() {
 				expectedByTagID := make(map[int]*summaryDTO)
 				expectedResults := []summaryDTO{}
+				for _, trx := range trxs {
+					tagID := tags.GetTagIDsFromString(trx.TagIDs)[0]
+					if expectedByTagID[tagID] == nil {
+						expectedByTagID[tagID] = &summaryDTO{
+							TagID:   tagID,
+							TagName: md.TagsByID[tagID],
+							Amount:  trx.Amount,
+						}
+					} else {
+						expectedByTagID[tagID].Amount += trx.Amount
+					}
+				}
+				for _, v := range expectedByTagID {
+					expectedResults = append(expectedResults, *v)
+				}
+
+				sort.Slice(expectedResults, func(li, ri int) bool {
+					return expectedResults[li].Amount > expectedResults[ri].Amount
+				})
+				actualResult, err := svc.processSummaryQuery(ctx, &query)
+				So(err, ShouldBeNil)
+				So(len(actualResult), ShouldEqual, len(expectedResults))
+				for i, actualSummary := range actualResult {
+					expectedSummary := expectedResults[i]
+					So(expectedSummary, ShouldResemble, actualSummary)
+				}
+			})
+
+			Convey("It not include income", func() {
+				expectedByTagID := make(map[int]*summaryDTO)
+				expectedResults := []summaryDTO{}
+
+				rndTagIncome := ldtesting.TrxRndTag(md.TagIDs)
+				trxin1 := ldtesting.NewTransaction(rndTagIncome, trxDate, rndAcc, ldtesting.TrxIncome)
+				trxin2 := ldtesting.NewTransaction(rndTagIncome, trxDate, rndAcc, ldtesting.TrxIncome)
+				ldtesting.SetupTransactions(DB, []ldtesting.Transaction{*trxin1, *trxin2})
+
 				for _, trx := range trxs {
 					tagID := tags.GetTagIDsFromString(trx.TagIDs)[0]
 					if expectedByTagID[tagID] == nil {
@@ -144,12 +181,12 @@ func TestProcessSummaryQuery(t *testing.T) {
 
 				rndTagsOutside := ldtesting.TrxRndTag([]int{tagID1, tagID2})
 
-				trx1 := ldtesting.NewExpenseTransaction(
+				trx1 := ldtesting.NewTransaction(
 					rndTagsOutside,
 					ldtesting.TrxRndDate(dateMin.AddDate(0, -2, 0), dateMin.AddDate(0, 0, -1)),
 					rndAcc,
 				)
-				trx2 := ldtesting.NewExpenseTransaction(
+				trx2 := ldtesting.NewTransaction(
 					rndTagsOutside,
 					ldtesting.TrxRndDate(dateMax.AddDate(0, 0, 1), dateMax.AddDate(0, 1, 0)),
 					rndAcc,

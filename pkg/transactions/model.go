@@ -10,6 +10,13 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+// TypeIDByName is a map of transaction type name name to id
+var TypeIDByName = map[string]int{
+	"income":  1,
+	"expense": 2,
+	"refund":  3,
+}
+
 type summaryDTO struct {
 	TagID   int    `json:"tagID"`
 	TagName string `json:"tagName"`
@@ -55,8 +62,10 @@ func (svc *dbQueryService) processSummaryQuery(ctx context.Context, query *summa
 	if query.typ == "" {
 		return nil, errors.New("Please provide type")
 	}
+
+	typeID := TypeIDByName[query.typ]
 	logger := logging.FromContext(ctx)
-	logger.Debugf("Processing summary query. LedgerID: %v", query.ledgerID)
+	logger.Debugf("Processing summary query. LedgerID: %v, type: %v (%v)", query.ledgerID, query.typ, typeID)
 	result := []summaryDTO{}
 
 	from := query.from
@@ -74,7 +83,8 @@ func (svc *dbQueryService) processSummaryQuery(ctx context.Context, query *summa
 		Joins("JOIN projections_accounts acc ON acc.aggregate_id = trx.account_id").
 		Joins("JOIN projections_tags tg ON tg.ledger_id = acc.ledger_id AND trx.tag_ids LIKE '%{'||tg.tag_id||'}%'").
 		Where("acc.ledger_id = ?", query.ledgerID).
-		Where("trx.date >= ? AND trx.date <= ?", from, to)
+		Where("trx.date >= ? AND trx.date <= ?", from, to).
+		Where("trx.type_id = ?", typeID)
 
 	if query.excludeTagIDs != nil {
 		dbQuery = dbQuery.Where("tg.tag_id NOT IN (?)", query.excludeTagIDs)

@@ -254,6 +254,46 @@ func TestProcessSummaryQuery(t *testing.T) {
 			})
 
 			Convey("It should subtract refunds from expense", func() {
+				expectedByTagID := make(map[int]*summaryDTO)
+				expectedResults := []summaryDTO{}
+
+				rndTagIncome := ldtesting.TrxRndTag(md.TagIDs)
+				trxref1 := ldtesting.NewTransaction(rndTagIncome, trxDate, rndAcc, ldtesting.TrxRefund)
+				trxref2 := ldtesting.NewTransaction(rndTagIncome, trxDate, rndAcc, ldtesting.TrxRefund)
+				ldtesting.SetupTransactions(DB, []ldtesting.Transaction{*trxref1, *trxref2})
+
+				for _, trx := range trxs {
+					tagID := tags.GetTagIDsFromString(trx.TagIDs)[0]
+					if expectedByTagID[tagID] == nil {
+						expectedByTagID[tagID] = &summaryDTO{
+							TagID:   tagID,
+							TagName: md.TagsByID[tagID],
+							Amount:  trx.Amount,
+						}
+					} else {
+						expectedByTagID[tagID].Amount += trx.Amount
+					}
+				}
+
+				refTag1 := tags.GetTagIDsFromString(trxref1.TagIDs)[0]
+				refTag2 := tags.GetTagIDsFromString(trxref2.TagIDs)[0]
+				expectedByTagID[refTag1].Amount -= trxref1.Amount
+				expectedByTagID[refTag2].Amount -= trxref2.Amount
+
+				for _, v := range expectedByTagID {
+					expectedResults = append(expectedResults, *v)
+				}
+
+				sort.Slice(expectedResults, func(li, ri int) bool {
+					return expectedResults[li].Amount > expectedResults[ri].Amount
+				})
+				actualResult, err := svc.processSummaryQuery(ctx, &query)
+				So(err, ShouldBeNil)
+				So(len(actualResult), ShouldEqual, len(expectedResults))
+				for i, actualSummary := range actualResult {
+					expectedSummary := expectedResults[i]
+					So(expectedSummary, ShouldResemble, actualSummary)
+				}
 			})
 
 			Convey("It should not include transactions from other ledgers", func() {

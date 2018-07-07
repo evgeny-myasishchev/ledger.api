@@ -79,12 +79,12 @@ func (svc *dbQueryService) processSummaryQuery(ctx context.Context, query *summa
 	}
 
 	dbQuery := svc.db.Table("projections_transactions trx").
-		Select("tg.tag_id tagID, tg.name tagName, SUM(trx.amount) amount").
+		Select("tg.tag_id tagID, tg.name tagName, SUM(CASE trx.type_id WHEN 3 THEN -trx.amount ELSE trx.amount END) amount").
 		Joins("JOIN projections_accounts acc ON acc.aggregate_id = trx.account_id").
 		Joins("JOIN projections_tags tg ON tg.ledger_id = acc.ledger_id AND trx.tag_ids LIKE '%{'||tg.tag_id||'}%'").
 		Where("acc.ledger_id = ?", query.ledgerID).
 		Where("trx.date >= ? AND trx.date <= ?", from, to).
-		Where("trx.type_id = ?", typeID)
+		Where("trx.type_id = ? or trx.type_id = 3", typeID) // We have to subtract refunds
 
 	if query.excludeTagIDs != nil {
 		dbQuery = dbQuery.Where("tg.tag_id NOT IN (?)", query.excludeTagIDs)

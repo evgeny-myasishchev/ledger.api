@@ -71,6 +71,11 @@ func TrxIncome(trx *Transaction) {
 	trx.typeID = 1
 }
 
+// TrxRefund will set income type for given transaction
+func TrxRefund(trx *Transaction) {
+	trx.typeID = 3
+}
+
 // NewTransaction creates a new mock transaction structure
 func NewTransaction(setup ...TransactionSetup) *Transaction {
 	trx := Transaction{

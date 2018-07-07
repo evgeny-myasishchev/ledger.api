@@ -32,5 +32,7 @@ func setDefaults(cfg *viper.Viper) *viper.Viper {
 
 // GetConfig - return config instance
 func GetConfig() Config {
-	return setDefaults(viper.New())
+	viperCfg := viper.New()
+	viperCfg.AutomaticEnv()
+	return setDefaults(viperCfg)
 }

@@ -1,6 +1,8 @@
 test.log
 .tags
 .tags_swap
+.build
+.env
 
 /bin
 /.go

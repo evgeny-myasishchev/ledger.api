@@ -7,6 +7,9 @@ Env vars:
 
 * DB_URL - Postgres db url, defaults to: `host=localhost port=5432 user=postgres dbname=ledger-dev sslmode=disable`
 * PORT - Port to listen on, defaults to 3000
+* APP_ENV - Application environment. Defaults to dev. Can be dev, test and prod.
+* AUTH0_AUD - auth0 audience, defaults to: https://staging.api.my-ledger.com
+* AUTH0_ISS - auth0 issuer, defaults to: https://ledger-staging.eu.auth0.com/
 
 # Dev
 

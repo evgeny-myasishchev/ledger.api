@@ -136,7 +136,9 @@ func NewLogger(env string) Logger {
 
 	logger := logrusLogger{
 		target: &logrus.Logger{
-			Out: os.Stderr,
+			Out:       os.Stdout,
+			Formatter: new(logrus.JSONFormatter),
+			Level:     logrus.DebugLevel, //For now using debug, to be changed to info
 		},
 	}
 	return &logger

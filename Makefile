@@ -8,7 +8,7 @@ PKG := ledger.api
 REGISTRY ?= evgenymyasishchev
 #
 # This version-strategy uses a manual value to set the version string
-VERSION := 0.0.1-rc
+VERSION := 0.0.2-a
 
 ###
 ### These variables should not need tweaking.

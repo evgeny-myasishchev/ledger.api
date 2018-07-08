@@ -31,6 +31,19 @@ type summaryQuery struct {
 	excludeTagIDs []string
 }
 
+type summaryQueryOpt func(*summaryQuery)
+
+func optionalDates(from *time.Time, to *time.Time) summaryQueryOpt {
+	return func(q *summaryQuery) {
+		if from != nil {
+			q.from = from
+		}
+		if to != nil {
+			q.to = to
+		}
+	}
+}
+
 func newSummaryQuery(ledgerID string, typ string, queryInit ...func(*summaryQuery)) *summaryQuery {
 	now := time.Now()
 	from := now.AddDate(0, -1, 0)

@@ -42,10 +42,7 @@ func createSummaryQueryHandler(svc QueryService) server.HandlerFunc {
 		if err != nil {
 			return nil, err
 		}
-		query := newSummaryQuery(ledgerID, typ, func(q *summaryQuery) {
-			q.from = from
-			q.to = to
-		})
+		query := newSummaryQuery(ledgerID, typ, optionalDates(from, to))
 		if val := req.URL.Query().Get("excludeTagIDs"); val != "" {
 			query.excludeTagIDs = strings.Split(val, ",")
 		}

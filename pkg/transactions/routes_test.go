@@ -76,10 +76,14 @@ func TestTransactionsRoutes(t *testing.T) {
 					So(recorder.Code, ShouldEqual, 200)
 					So(len(svc.processSummaryQueryCalls), ShouldEqual, 1)
 					queryCall := svc.processSummaryQueryCalls[0]
-					So(queryCall.input, ShouldResemble, []interface{}{&summaryQuery{
-						ledgerID: ledgerID,
-						typ:      typ,
-					}})
+					defaultQuery := newSummaryQuery(ledgerID, typ)
+
+					actualQuery := queryCall.input.([]interface{})[0].(*summaryQuery)
+					So(actualQuery.from.Unix(), ShouldAlmostEqual, defaultQuery.from.Unix())
+					So(actualQuery.to.Unix(), ShouldAlmostEqual, defaultQuery.to.Unix())
+					actualQuery.from = defaultQuery.from
+					actualQuery.to = defaultQuery.to
+					So(actualQuery, ShouldResemble, defaultQuery)
 
 					expectedMessage, _ := json.Marshal(queryCall.result)
 					So(recorder.Body.String(), ShouldEqual, string(expectedMessage))

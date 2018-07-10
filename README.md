@@ -58,6 +58,9 @@ rake db:setup && rake ledger:dummy_seed
 # start a backburner worker and wait it to cimplete it's job
 # When it's done you should see no new logs
 backburner -d && tailf log/development.log
+
+# Setup test db
+rake db:test:prepare
 ```
 
 Optionally use pgadmin to see db structure and run queries:

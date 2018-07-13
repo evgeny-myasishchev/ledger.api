@@ -13,7 +13,7 @@ var DB *gorm.DB
 
 func TestMain(m *testing.M) {
 	cfg := app.GetConfig()
-	DB = app.OpenGormConnection(cfg.GetString("DB_URL"), logging.NewTestLogger())
+	DB = app.OpenGormConnection(cfg.GetString("DB_URL"), logging.NewTestLogger()).LogMode(true)
 	defer DB.Close()
 
 	// call flag.Parse() here if TestMain uses flags

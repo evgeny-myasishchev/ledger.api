@@ -68,3 +68,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/auth0-community/go-auth0"
+
+[[constraint]]
+  name = "github.com/thoas/go-funk"
+  version = "0.3.0"

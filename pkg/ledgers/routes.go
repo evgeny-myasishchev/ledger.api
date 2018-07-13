@@ -7,7 +7,7 @@ import (
 )
 
 // CreateRoutes - Register ledger related routes
-func CreateRoutes(ledgerSvc Service) server.Routes {
+func CreateRoutes() server.Routes {
 	return func(router *server.Router) {
 		router.GET("/v2/ledgers", server.RequireScopes(handleGetLedgers, "read:ledgers"))
 		router.POST("/v2/ledgers", server.RequireScopes(handleCreateLedger, "write:ledgers"))

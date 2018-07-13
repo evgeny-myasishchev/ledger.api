@@ -10,14 +10,11 @@ import (
 )
 
 var DB *gorm.DB
-var service Service
 
 func TestMain(m *testing.M) {
 	cfg := app.GetConfig()
 	DB = app.OpenGormConnection(cfg.GetString("DB_URL"), logging.NewTestLogger())
 	defer DB.Close()
-	service = CreateService(DB)
-	ResetSchema(DB)
 
 	// call flag.Parse() here if TestMain uses flags
 	os.Exit(m.Run())

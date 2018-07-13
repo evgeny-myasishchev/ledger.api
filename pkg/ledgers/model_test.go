@@ -1,66 +1,62 @@
 package ledgers
 
 import (
+	"errors"
 	"fmt"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/icrowley/fake"
-	uuid "github.com/satori/go.uuid"
+	"github.com/satori/go.uuid"
+
+	"github.com/jinzhu/gorm"
 	. "github.com/smartystreets/goconvey/convey"
-	"ledger.api/pkg/users"
 )
 
-func randomUser() *users.User {
-	u := users.User{
-		ID: fmt.Sprintf("user-%v", fake.Word()),
-	}
-	return &u
+var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+type ledger struct {
+	id                int `gorm:"primary_key"`
+	aggregateID       string
+	ownerUserID       int
+	name              string
+	currencyCode      string
+	authorizedUserIDs string
 }
 
-func randomNewLedger() *NewLedger {
-	l := NewLedger{
-		ID:   uuid.NewV4().String(),
-		Name: fake.Brand(),
-	}
-	return &l
+func (ledger) TableName() string {
+	return "projections_ledgers"
 }
 
-func TestLedgerService(t *testing.T) {
-	Convey("Given new ledger object", t, func() {
-		user := randomUser()
-		newLedger := randomNewLedger()
-		Convey("When created", func() {
-			created, err := service.createLedger(user, newLedger)
+func setupLedgers(db *gorm.DB) ([]ledger, error) {
+	numLedgers := 2 + rnd.Intn(5)
+	ledgers := make([]ledger, numLedgers)
+	fmt.Println("fuck")
+	for i := 0; i < numLedgers; i++ {
+		ldr := ledger{
+			aggregateID:  uuid.NewV4().String(),
+			ownerUserID:  rnd.Intn(20),
+			name:         fake.Brand(),
+			currencyCode: fake.CurrencyCode(),
+		}
+		ledgers[i] = ldr
+		if err := db.Create(&ldr).Error; err != nil {
+			fmt.Println("Returning err")
+			return nil, err
+		}
+	}
+	fmt.Println("Returning")
+	return ledgers, errors.New("Not implemented")
+}
 
-			Convey("It should not fail", func() {
-				So(err, ShouldBeNil)
-			})
-
-			Convey("Create a new ledger for given attributes", func() {
-				So(created.ID, ShouldEqual, newLedger.ID)
-				So(created.Name, ShouldEqual, newLedger.Name)
-				So(created.CreatedUserID, ShouldEqual, user.ID)
-			})
-
-			Convey("It should get ID generated", func() {
-				So(created.ID, ShouldNotBeEmpty)
-			})
-
-			Convey("It should be written to the db", func() {
-				fromDb := Ledger{}
-				res := DB.Where("id = ?", created.ID).First(&fromDb)
-				fromDb.CreatedAt = created.CreatedAt
-				fromDb.UpdatedAt = created.UpdatedAt
-				So(res.RecordNotFound(), ShouldBeFalse)
-				So(&fromDb, ShouldResemble, created)
-			})
-		})
-
-		Convey("When failed to create", func() {
-			created, err := service.createLedger(user, &NewLedger{})
-			Convey("It should return error object", func() {
-				So(err, ShouldNotBeNil)
-				So(created, ShouldBeNil)
+func TestUserLedgersQuery(t *testing.T) {
+	Convey("Given user ledgers query", t, func() {
+		ledgers, err := setupLedgers(DB)
+		So(err, ShouldBeNil)
+		Convey("When default query object is used", func() {
+			Convey("It should return all ledgers", func() {
+				fmt.Printf("ledgers %+v", ledgers)
 			})
 		})
 	})

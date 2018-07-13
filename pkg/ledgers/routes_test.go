@@ -13,7 +13,7 @@ func SetupRouter() *server.HTTPApp {
 
 	return server.
 		CreateHTTPApp(server.HTTPAppConfig{Env: "test"}).
-		RegisterRoutes(CreateRoutes(service))
+		RegisterRoutes(CreateRoutes())
 }
 
 func TestCreateRoute(t *testing.T) {

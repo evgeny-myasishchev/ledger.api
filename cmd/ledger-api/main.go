@@ -34,7 +34,7 @@ func main() {
 	db := app.OpenGormConnection(cfg.GetString("DB_URL"), logger)
 	defer db.Close()
 
-	ledgersSvc := ledgers.CreateService(db)
+	ledgersSvc := ledgers.CreateQueryService(db)
 	transactonsQuerySvc := transactions.CreateQueryService(db)
 
 	handler := server.

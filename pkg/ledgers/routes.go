@@ -7,17 +7,18 @@ import (
 )
 
 // CreateRoutes - Register ledger related routes
-func CreateRoutes() server.Routes {
+func CreateRoutes(svc QueryService) server.Routes {
 	return func(router *server.Router) {
-		router.GET("/v2/ledgers", server.RequireScopes(handleGetLedgers, "read:ledgers"))
-		router.POST("/v2/ledgers", server.RequireScopes(handleCreateLedger, "write:ledgers"))
+		router.GET("/v2/ledgers", server.RequireScopes(createGetLedgersHandler(svc), "read:ledgers"))
 	}
 }
 
-func handleGetLedgers(req *http.Request, h *server.HandlerToolkit) (*server.Response, error) {
-	return h.Response(server.JSON{}), nil
-}
-
-func handleCreateLedger(req *http.Request, h *server.HandlerToolkit) (*server.Response, error) {
-	return h.Response(server.JSON{}), nil
+func createGetLedgersHandler(svc QueryService) server.HandlerFunc {
+	return func(req *http.Request, h *server.HandlerToolkit) (*server.Response, error) {
+		result, err := svc.processUserLedgersQuery(req.Context(), &userLedgersQuery{})
+		if err != nil {
+			return nil, err
+		}
+		return h.Response(result), nil
+	}
 }

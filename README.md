@@ -90,6 +90,14 @@ reflex $(cat .reflex) -- go test ./pkg/server/... -v
 reflex $(cat .reflex) -- go test ./pkg/server/... -v --run TestAuthMiddleware
 ```
 
+# Docker
+
+Build and push image:
+
+```
+make docker-push
+```
+
 # TODO
 
 Evaluate and integrate https://github.com/spf13/cobra

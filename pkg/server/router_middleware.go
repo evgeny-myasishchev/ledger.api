@@ -106,6 +106,21 @@ func NewLoggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// CreateCorsMiddlewareFunc - creates a middleware to handle CORS preflights
+func CreateCorsMiddlewareFunc() RouterMiddlewareFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, req *http.Request) {
+			w.Header().Add("Access-Control-Allow-Origin", "*")
+			w.Header().Add("Access-Control-Allow-Headers", "X-Request-ID,Authorization")
+			if req.Method == "OPTIONS" {
+				w.WriteHeader(200)
+			} else {
+				next(w, req)
+			}
+		}
+	}
+}
+
 // AuthMiddlewareParams represents params of the auth middleware
 type AuthMiddlewareParams struct {
 	Validator auth.RequestValidator

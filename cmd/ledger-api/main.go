@@ -39,6 +39,7 @@ func main() {
 
 	handler := server.
 		CreateHTTPApp(server.HTTPAppConfig{Env: env, Logger: logger}).
+		Use(server.CreateCorsMiddlewareFunc()).
 		Use(createAuthMiddleware(cfg)).
 		RegisterRoutes(app.Routes).
 		RegisterRoutes(ledgers.CreateRoutes(ledgersSvc)).

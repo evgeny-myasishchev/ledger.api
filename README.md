@@ -18,29 +18,23 @@ Docker and docker-compose assumed to be installed on a dev host.
 
 ### go
 
-Requires go **1.10**
+Requires go **1.11**
 
-Assume gvm and direnv is unused.
-
-Setup GOPATH dir (for example here ~/projects/go):
+Assume gvm and direnv is used.
 
 Create .envrc:
 ```
 . $GVM_ROOT/scripts/gvm-default
-gvm use 1.10
-export GOPATH=${PWD}:${GOPATH}
-export PATH=${PWD}/bin:${PATH}
+gvm use 1.11
 ```
 and don't forget `direnv allow .`
-
-Clone this repo to ${GOPATH}/src/ledger.api
 
 ### Postgres
 
 Start postgres:
 
 ```
-docker-compose up db -d
+docker-compose up -d db
 ```
 
 On a very first run you would also have to setup a db.

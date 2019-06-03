@@ -3,6 +3,7 @@ test.log
 .tags_swap
 .build
 .env
+.vscode
 
 /bin
 /.go

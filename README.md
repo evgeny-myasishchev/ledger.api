@@ -13,21 +13,17 @@ Env vars:
 
 # Dev
 
-Repo skeleton taken from (here)[https://github.com/thockin/go-build-template].
 Docker and docker-compose assumed to be installed on a dev host.
 
 ### go
 
-Requires go **1.11**
+To run it please make sure you have golang installed. 
+Simplest is to use [gvm](https://github.com/moovweb/gvm) and [direnv](https://github.com/direnv/direnv).
+See [.golang-version](.golang-version) for a version of golang used.
 
-Assume gvm and direnv is used.
+Install required version of golang:
 
-Create .envrc:
-```
-. $GVM_ROOT/scripts/gvm-default
-gvm use 1.11
-```
-and don't forget `direnv allow .`
+`gvm install $(cat .golang-version)`
 
 ### Postgres
 
@@ -82,6 +78,11 @@ reflex $(cat .reflex) -- go test ./pkg/server/... -v
 
 # Or specific examples
 reflex $(cat .reflex) -- go test ./pkg/server/... -v --run TestAuthMiddleware
+```
+
+You can also use a shorthand helper:
+```
+go-test-watch ./pkg/server/... -v
 ```
 
 # Docker

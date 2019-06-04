@@ -95,4 +95,4 @@ make docker-push
 
 # TODO
 
-Evaluate and integrate https://github.com/spf13/cobra
+* Do not use Convey, use assert and standard approach

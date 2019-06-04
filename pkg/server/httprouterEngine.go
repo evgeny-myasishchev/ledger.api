@@ -31,9 +31,9 @@ func (engine *httpRouterEngine) ServeHTTP(w http.ResponseWriter, req *http.Reque
 
 func createHTTPRouterEngine(logger logging.Logger) HTTPEngine {
 	router := httprouter.New()
-	router.NotFound = func(w http.ResponseWriter, req *http.Request) {
+	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write(noRouteErrorBody)
-	}
+	})
 	return &httpRouterEngine{router: router}
 }

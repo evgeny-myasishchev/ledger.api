@@ -6,7 +6,6 @@ ENV GO111MODULE=on
 
 WORKDIR /go/src/
 COPY bin/ /go/src/bin/
-RUN ./bin/maxmindupdater.sh
 
 COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh

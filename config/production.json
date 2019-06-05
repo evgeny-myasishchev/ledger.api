@@ -1,5 +1,9 @@
 {
     "server": {
         "port": 80
+    },
+    "log": {
+        "mode": "json",
+        "level": "info"
     }
 }

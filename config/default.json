@@ -1,6 +1,7 @@
 {
     "log": {
-        "mode": "json"
+        "mode": "json",
+        "level": "debug"
     },
     "server": {
         "port": 3000

@@ -21,6 +21,8 @@ var (
 	// TODO: Rename json mode to default
 	LogMode = localParams.NewParam("log/mode").String()
 
+	LogLevel = localParams.NewParam("log/level").String()
+
 	DbURL = localParams.NewParam("db/url").String()
 
 	Auth0Aud = localParams.NewParam("auth0/aud").String()
@@ -29,6 +31,11 @@ var (
 )
 
 // Load will load and initialize config
-func Load() (config.ServiceConfig, error) {
-	return configBuilder.LoadConfig()
+func Load() config.ServiceConfig {
+	cfg, err := configBuilder.LoadConfig()
+	if err != nil {
+		// TODO: Make sure panic output is clean and actionable
+		panic(err)
+	}
+	return cfg
 }

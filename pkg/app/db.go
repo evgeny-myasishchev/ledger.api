@@ -1,23 +1,25 @@
 package app
 
 import (
+	"fmt"
 	"net/url"
+
+	"ledger.api/pkg/core/diag"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres" //go dialect has to be imported
-	"ledger.api/pkg/logging"
 )
 
 // OpenGormConnection - opens connection for given url
-func OpenGormConnection(rawDBurl string, logger logging.Logger) *gorm.DB {
+func OpenGormConnection(rawDBurl string) *gorm.DB {
 	dbURL, err := url.Parse(rawDBurl)
 	if err != nil {
 		panic(err)
 	}
-	logger.
-		WithField("host", dbURL.Host).
-		WithField("db", dbURL.Path).
-		Info("Initializing DB connection")
+	logger.WithData(diag.MsgData{
+		"host": dbURL.Host,
+		"db":   dbURL.Path,
+	}).Info(nil, "Initializing DB connection")
 	db, err := gorm.Open("postgres", rawDBurl)
 	if err != nil {
 		panic(err)
@@ -27,9 +29,9 @@ func OpenGormConnection(rawDBurl string, logger logging.Logger) *gorm.DB {
 }
 
 type dbLogger struct {
-	logger logging.Logger
+	logger diag.Logger
 }
 
 func (dl dbLogger) Print(values ...interface{}) {
-	dl.logger.Debug(values...)
+	dl.logger.Debug(nil, fmt.Sprint(values...))
 }

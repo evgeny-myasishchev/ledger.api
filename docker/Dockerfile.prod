@@ -10,6 +10,5 @@ COPY docker/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 COPY --from=dev /go/bin/${SERVICE_NAME} /usr/local/bin/${SERVICE_NAME}
-COPY --from=dev /go/src/geodb/ /home/${SERVICE_NAME}/geodb/
 
 ENTRYPOINT [ "docker-entrypoint.sh" ]

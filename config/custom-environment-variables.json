@@ -1,0 +1,12 @@
+{
+    "server": {
+        "port": "SERVER_PORT"
+    },
+    "db": {
+        "url": "DB_URL"
+    },
+    "auth0": {
+        "aud": "AUTH0_AUD",
+        "iss": "AUTH0_ISS"
+    }
+}

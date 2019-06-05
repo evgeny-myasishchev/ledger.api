@@ -1,0 +1,12 @@
+{
+    "server": {
+        "port": 3000
+    },
+    "db": {
+        "url": "postgresql://postgres@localhost:5432/ledger_dev?sslmode=disable"
+    },
+    "auth0": {
+        "aud": "https://staging.api.my-ledger.com",
+        "iss": "https://ledger-staging.eu.auth0.com/"
+    }
+}

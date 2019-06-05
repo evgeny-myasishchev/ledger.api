@@ -11,7 +11,6 @@ require (
 	github.com/go-playground/universal-translator v0.16.0 // indirect
 	github.com/go-sql-driver/mysql v1.4.1 // indirect
 	github.com/google/jsonapi v0.0.0-20170708005851-46d3ced04344
-	github.com/hashicorp/hcl v0.0.0-20171017181929-23c074d0eceb // indirect
 	github.com/icrowley/fake v0.0.0-20180203215853-4178557ae428
 	github.com/jinzhu/gorm v1.9.1
 	github.com/jinzhu/inflection v0.0.0-20170102125226-1c35d901db3d // indirect
@@ -19,19 +18,11 @@ require (
 	github.com/julienschmidt/httprouter v1.2.0
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/lib/pq v0.0.0-20180201184707-88edab080323 // indirect
-	github.com/magiconair/properties v1.7.6 // indirect
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
-	github.com/mitchellh/mapstructure v0.0.0-20180220230111-00c29f56e238 // indirect
-	github.com/pelletier/go-toml v1.1.0 // indirect
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a
-	github.com/spf13/afero v1.0.2 // indirect
-	github.com/spf13/cast v1.2.0 // indirect
-	github.com/spf13/jwalterweatherman v0.0.0-20180109140146-7c0cea34c8ec // indirect
-	github.com/spf13/pflag v1.0.0 // indirect
-	github.com/spf13/viper v1.0.0
 	github.com/stretchr/testify v1.3.0
 	github.com/thoas/go-funk v0.0.0-20180701190756-e2f8da694c9c
 	goji.io v2.0.2+incompatible

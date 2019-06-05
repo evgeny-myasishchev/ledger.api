@@ -1,4 +1,7 @@
 {
+    "log": {
+        "mode": "json"
+    },
     "server": {
         "port": 3000
     },

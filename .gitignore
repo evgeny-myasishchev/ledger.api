@@ -4,6 +4,7 @@ test.log
 .build
 .env
 .vscode
+/tmp
 
 /bin
 /.go

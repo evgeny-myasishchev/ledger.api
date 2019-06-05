@@ -2,6 +2,7 @@ module ledger.api
 
 require (
 	github.com/auth0-community/go-auth0 v0.0.0-20180526071657-1d107141f859
+	github.com/bxcodec/faker/v3 v3.1.0
 	github.com/corpix/uarand v0.0.0-20170903190822-2b8494104d86 // indirect
 	github.com/denisenkom/go-mssqldb v0.0.0-20190515213511-eb9f6a1743f3 // indirect
 	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
@@ -23,7 +24,7 @@ require (
 	github.com/mitchellh/mapstructure v0.0.0-20180220230111-00c29f56e238 // indirect
 	github.com/pelletier/go-toml v1.1.0 // indirect
 	github.com/satori/go.uuid v1.2.0
-	github.com/sirupsen/logrus v1.2.0
+	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/assertions v1.0.0 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a
 	github.com/spf13/afero v1.0.2 // indirect
@@ -31,8 +32,9 @@ require (
 	github.com/spf13/jwalterweatherman v0.0.0-20180109140146-7c0cea34c8ec // indirect
 	github.com/spf13/pflag v1.0.0 // indirect
 	github.com/spf13/viper v1.0.0
-	github.com/stretchr/testify v1.3.0 // indirect
+	github.com/stretchr/testify v1.3.0
 	github.com/thoas/go-funk v0.0.0-20180701190756-e2f8da694c9c
+	goji.io v2.0.2+incompatible
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v9 v9.13.0
 	gopkg.in/square/go-jose.v2 v2.1.6

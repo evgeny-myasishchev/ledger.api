@@ -1,6 +1,6 @@
 SERVICE_NAME = ledger-api
 
-VERSION = 0.0.1
+VERSION = 0.0.4-a
 
 REGISTRY ?= evgenymyasishchev
 
@@ -22,7 +22,7 @@ INSTALL_FLAGS = -installsuffix "static" -ldflags "\
 	"
 
 DEV_IMAGE = dev/${SERVICE_NAME}:latest
-PROD_IMAGE = ${REGISTRY}/${SERVICE_NAME}:latest
+PROD_IMAGE = ${REGISTRY}/${SERVICE_NAME}
 
 
 all: build
@@ -39,8 +39,12 @@ docker_build:
 
 docker_build_release: docker_build
 	@echo Building release image
-	docker build --build-arg DEV_IMAGE=$(DEV_IMAGE) --build-arg SERVICE_NAME=$(SERVICE_NAME) -f docker/Dockerfile.prod . -t ${PROD_IMAGE}
+	docker build \
+		--build-arg DEV_IMAGE=$(DEV_IMAGE) \
+		--build-arg SERVICE_NAME=$(SERVICE_NAME) \
+		-f docker/Dockerfile.prod . \
+		-t ${PROD_IMAGE}:latest -t ${PROD_IMAGE}:${VERSION}
 
 docker_push_release:
 	@echo Pushing release image
-	docker push ${PROD_IMAGE}
+	docker push ${PROD_IMAGE}:latest ${PROD_IMAGE}:${VERSION}

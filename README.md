@@ -90,7 +90,7 @@ go-test-watch ./pkg/server/... -v
 Build and push image:
 
 ```
-make docker-push
+make docker_push_release
 ```
 
 # TODO

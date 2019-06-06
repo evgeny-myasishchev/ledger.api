@@ -73,7 +73,12 @@ Optionally use pgadmin to see db structure and run queries:
 Use [reflex](https://github.com/cespare/reflex) to watch changes and restart server:
 
 ```
-reflex $(cat .reflex) -- go run cmd/ledger-api/main.go
+reflex $(cat .reflex) -- go run cmd/ledger-api/*.go
+```
+
+or with a helper script and pretty logs:
+```
+go-run-watch cmd/ledger-api/*.go | npx pino-pretty
 ```
 
 Use `goconvey` to automatically run tests in browser.

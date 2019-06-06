@@ -6,7 +6,6 @@ test.log
 .vscode
 /tmp
 
-/bin
 /.go
 /.push-*
 /.container-*

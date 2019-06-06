@@ -5,51 +5,58 @@ import (
 	"strings"
 	"time"
 
-	"ledger.api/pkg/server"
+	"ledger.api/pkg/core/router"
 )
 
-// CreateRoutes - Register transactions related routes
-func CreateRoutes(svc QueryService) server.Routes {
-	return func(router *server.Router) {
-		router.GET(
-			// from=:from&to=:to&excludeTags=:excludeTagIDs
-			"/v2/ledgers/:ledgerID/transactions/:type/summary",
-			server.RequireScopes(createSummaryQueryHandler(svc), "read:transactions"),
-		)
-	}
-}
-
-func parseQueryTime(req *http.Request, key string) (*time.Time, error) {
-	if timeStr := req.URL.Query().Get(key); timeStr != "" {
-		from, err := time.Parse(time.RFC3339, timeStr)
+func createSummaryQueryHandler(svc QueryService) router.ToolkitHandlerFunc {
+	handleTimeValue := func(rawValue string) (interface{}, error) {
+		from, err := time.Parse(time.RFC3339, rawValue)
 		if err != nil {
 			return nil, err
 		}
 		return &from, nil
 	}
-	return nil, nil
+
+	handleCSVValue := func(rawValue string) (interface{}, error) {
+		return strings.FieldsFunc(rawValue, func(c rune) bool {
+			return c == ','
+		}), nil
+	}
+
+	return func(w http.ResponseWriter, r *http.Request, h router.HandlerToolkit) error {
+		var params struct {
+			LedgerID      string
+			Type          string
+			From          *time.Time
+			To            *time.Time
+			ExcludeTagIDs []string
+		}
+
+		err := h.BindParams().
+			PathParam("ledgerID").String(&params.LedgerID).
+			PathParam("type").String(&params.Type).
+			QueryParam("from").Custom(&params.From, handleTimeValue).
+			QueryParam("to").Custom(&params.From, handleTimeValue).
+			QueryParam("excludeTagIDs").Custom(&params.ExcludeTagIDs, handleCSVValue).
+			Validate(&params)
+		if err != nil {
+			return err
+		}
+		query := newSummaryQuery(params.LedgerID, params.Type, optionalDates(params.From, params.To))
+		result, err := svc.processSummaryQuery(r.Context(), query)
+		if err != nil {
+			return err
+		}
+		return h.WriteJSON(result)
+	}
 }
 
-func createSummaryQueryHandler(svc QueryService) server.HandlerFunc {
-	return func(req *http.Request, h *server.HandlerToolkit) (*server.Response, error) {
-		ledgerID := h.Params.ByName("ledgerID")
-		typ := h.Params.ByName("type")
-		from, err := parseQueryTime(req, "from")
-		if err != nil {
-			return nil, err
-		}
-		to, err := parseQueryTime(req, "to")
-		if err != nil {
-			return nil, err
-		}
-		query := newSummaryQuery(ledgerID, typ, optionalDates(from, to))
-		if val := req.URL.Query().Get("excludeTagIDs"); val != "" {
-			query.excludeTagIDs = strings.Split(val, ",")
-		}
-		result, err := svc.processSummaryQuery(req.Context(), query)
-		if err != nil {
-			return nil, err
-		}
-		return h.Response(result), nil
-	}
+// SetupRoutes will register transactions routes
+func SetupRoutes(appRouter router.Router, svc QueryService) {
+	// TODO: server.RequireScopes(createSummaryQueryHandler(svc), "read:transactions")
+
+	// from=:from&to=:to&excludeTags=:excludeTagIDs
+	appRouter.Handle("GET",
+		"/v2/ledgers/:ledgerID/transactions/:type/summary",
+		createSummaryQueryHandler(svc))
 }

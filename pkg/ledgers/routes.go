@@ -2,8 +2,6 @@ package ledgers
 
 import (
 	"net/http"
-
-	"ledger.api/pkg/server"
 )
 
 // CreateRoutes - Register ledger related routes

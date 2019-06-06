@@ -11,7 +11,6 @@ import (
 	"github.com/icrowley/fake"
 	. "github.com/smartystreets/goconvey/convey"
 	"ledger.api/pkg/internal/ldtesting"
-	"ledger.api/pkg/server"
 )
 
 type methodCall struct {

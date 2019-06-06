@@ -11,8 +11,6 @@ import (
 	"github.com/icrowley/fake"
 	"github.com/satori/go.uuid"
 
-	"ledger.api/pkg/logging"
-
 	. "github.com/smartystreets/goconvey/convey"
 	"ledger.api/pkg/internal/ldtesting"
 	"ledger.api/pkg/tags"

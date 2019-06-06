@@ -7,9 +7,8 @@ import (
 	"time"
 
 	"github.com/icrowley/fake"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 	funk "github.com/thoas/go-funk"
-	"ledger.api/pkg/logging"
 
 	"github.com/jinzhu/gorm"
 	. "github.com/smartystreets/goconvey/convey"
@@ -54,13 +53,12 @@ func setupLedgers(db *gorm.DB) ([]ledger, error) {
 
 func TestUserLedgersQuery(t *testing.T) {
 	Convey("Given user ledgers query", t, func() {
-		ctx := logging.CreateContext(context.Background(), logging.NewTestLogger())
 		ledgers, err := setupLedgers(DB)
 		svc := CreateQueryService(DB)
 		So(err, ShouldBeNil)
 		Convey("When default query object is used", func() {
 			Convey("It should return all ledgers", func() {
-				ledgersDTOs, err := svc.processUserLedgersQuery(ctx, &userLedgersQuery{})
+				ledgersDTOs, err := svc.processUserLedgersQuery(context.Background(), &userLedgersQuery{})
 				So(err, ShouldBeNil)
 				So(ledgersDTOs, ShouldHaveLength, len(ledgers))
 				ledgersByID := funk.ToMap(ledgers, "AggregateID").(map[string]ledger)

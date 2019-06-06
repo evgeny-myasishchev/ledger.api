@@ -18,7 +18,6 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 	"ledger.api/pkg/internal/ldtesting"
-	"ledger.api/pkg/server"
 )
 
 var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))

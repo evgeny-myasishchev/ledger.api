@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"ledger.api/pkg/logging"
+	"ledger.api/pkg/core/diag"
 
 	"github.com/jinzhu/gorm"
 )
@@ -77,8 +77,7 @@ func (svc *dbQueryService) processSummaryQuery(ctx context.Context, query *summa
 	}
 
 	typeID := TypeIDByName[query.typ]
-	logger := logging.FromContext(ctx)
-	logger.Debugf("Processing summary query. LedgerID: %v, type: %v (%v)", query.ledgerID, query.typ, typeID)
+	logger.Debug(ctx, "Processing summary query. LedgerID: %v, type: %v (%v)", query.ledgerID, query.typ, typeID)
 	result := []summaryDTO{}
 
 	from := query.from
@@ -107,7 +106,9 @@ func (svc *dbQueryService) processSummaryQuery(ctx context.Context, query *summa
 		Group("tg.tag_id, tg.name").
 		Order("amount DESC")
 
-	logger.WithField("query", dbQuery.QueryExpr()).Debugf("Executing transactions summary query")
+	logger.WithData(diag.MsgData{
+		"query": dbQuery.QueryExpr(),
+	}).Debug(ctx, "Executing transactions summary query")
 
 	rows, err := dbQuery.Rows()
 

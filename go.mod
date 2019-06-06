@@ -21,7 +21,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.2
-	github.com/smartystreets/assertions v1.0.0 // indirect
+	github.com/smartystreets/assertions v1.0.0
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a
 	github.com/stretchr/testify v1.3.0
 	github.com/thoas/go-funk v0.0.0-20180701190756-e2f8da694c9c

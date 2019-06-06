@@ -2,9 +2,14 @@ package ledgers
 
 import (
 	"context"
-	"encoding/json"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/smartystreets/assertions"
+
+	"ledger.api/pkg/core/diag"
+
+	tst "ledger.api/pkg/internal/testing"
 
 	"ledger.api/pkg/core/router"
 
@@ -47,6 +52,7 @@ func (svc *mockQueryService) processUserLedgersQuery(ctx context.Context, query 
 func setupRouter() (*mockQueryService, router.Router) {
 	svc := mockQueryService{processUserLedgersQueryCalls: []methodCall{}}
 	appRouter := router.CreateRouter()
+	appRouter.Use(diag.NewLogRequestsMiddleware())
 	SetupRoutes(appRouter, &svc)
 	return &svc, appRouter
 }
@@ -67,8 +73,12 @@ func TestCreateRoute(t *testing.T) {
 				actualQuery := queryCall.input.([]interface{})[0].(*userLedgersQuery)
 				So(actualQuery, ShouldResemble, defaultQuery)
 
-				expectedMessage, _ := json.Marshal(queryCall.result)
-				So(recorder.Body.String(), ShouldEqual, string(expectedMessage))
+				var actualData []ledgerDTO
+				if !tst.JSONUnmarshalReader(t, recorder.Body, &actualData) {
+					return
+				}
+
+				So(actualData, assertions.ShouldResemble, queryCall.result)
 				So(recorder.Header().Get("content-type"), ShouldEqual, "application/json")
 			})
 

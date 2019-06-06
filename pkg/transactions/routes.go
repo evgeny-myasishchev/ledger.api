@@ -10,6 +10,9 @@ import (
 
 func createSummaryQueryHandler(svc QueryService) router.ToolkitHandlerFunc {
 	handleTimeValue := func(rawValue string) (interface{}, error) {
+		if rawValue == "" {
+			return (*time.Time)(nil), nil
+		}
 		from, err := time.Parse(time.RFC3339, rawValue)
 		if err != nil {
 			return nil, err
@@ -18,9 +21,13 @@ func createSummaryQueryHandler(svc QueryService) router.ToolkitHandlerFunc {
 	}
 
 	handleCSVValue := func(rawValue string) (interface{}, error) {
-		return strings.FieldsFunc(rawValue, func(c rune) bool {
+		values := strings.FieldsFunc(rawValue, func(c rune) bool {
 			return c == ','
-		}), nil
+		})
+		if len(values) == 0 {
+			return ([]string)(nil), nil
+		}
+		return values, nil
 	}
 
 	return func(w http.ResponseWriter, r *http.Request, h router.HandlerToolkit) error {
@@ -36,13 +43,16 @@ func createSummaryQueryHandler(svc QueryService) router.ToolkitHandlerFunc {
 			PathParam("ledgerID").String(&params.LedgerID).
 			PathParam("type").String(&params.Type).
 			QueryParam("from").Custom(&params.From, handleTimeValue).
-			QueryParam("to").Custom(&params.From, handleTimeValue).
+			QueryParam("to").Custom(&params.To, handleTimeValue).
 			QueryParam("excludeTagIDs").Custom(&params.ExcludeTagIDs, handleCSVValue).
 			Validate(&params)
 		if err != nil {
 			return err
 		}
-		query := newSummaryQuery(params.LedgerID, params.Type, optionalDates(params.From, params.To))
+		query := newSummaryQuery(params.LedgerID, params.Type,
+			optionalDates(params.From, params.To),
+			withExcludeTagIDs(params.ExcludeTagIDs),
+		)
 		result, err := svc.processSummaryQuery(r.Context(), query)
 		if err != nil {
 			return err

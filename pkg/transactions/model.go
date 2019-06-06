@@ -44,6 +44,12 @@ func optionalDates(from *time.Time, to *time.Time) summaryQueryOpt {
 	}
 }
 
+func withExcludeTagIDs(excludeTagIDs []string) summaryQueryOpt {
+	return func(q *summaryQuery) {
+		q.excludeTagIDs = excludeTagIDs
+	}
+}
+
 func newSummaryQuery(ledgerID string, typ string, queryInit ...func(*summaryQuery)) *summaryQuery {
 	now := time.Now()
 	from := now.AddDate(0, -1, 0)

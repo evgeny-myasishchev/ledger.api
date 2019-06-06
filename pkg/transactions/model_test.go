@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/icrowley/fake"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 
 	. "github.com/smartystreets/goconvey/convey"
 	"ledger.api/pkg/internal/ldtesting"
@@ -34,7 +34,7 @@ func TestNewSummaryQuery(t *testing.T) {
 
 func TestProcessSummaryQuery(t *testing.T) {
 	svc := CreateQueryService(DB)
-	ctx := logging.CreateContext(context.Background(), logging.NewTestLogger())
+	ctx := context.Background()
 
 	Convey("Given summaryQuery", t, func() {
 		md, err := ldtesting.SetupLedgerData(DB)

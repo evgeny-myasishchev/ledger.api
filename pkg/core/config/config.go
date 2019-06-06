@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"math/rand"
 	"os"
@@ -40,12 +41,35 @@ type AppEnv struct {
 	ClusterName string
 }
 
+type appEnvCfg struct {
+	lookupFlag func(name string) *flag.Flag
+}
+
+type appEnvOpt func(*appEnvCfg)
+
+func withLookupFlag(lookupFlag func(name string) *flag.Flag) appEnvOpt {
+	return func(cfg *appEnvCfg) {
+		cfg.lookupFlag = lookupFlag
+	}
+}
+
 // NewAppEnv creates a new instance of the app env from os env
 // Will use "dev" by default
-func NewAppEnv(serviceName string) AppEnv {
+func NewAppEnv(serviceName string, opts ...appEnvOpt) AppEnv {
+	cfg := appEnvCfg{
+		lookupFlag: flag.Lookup,
+	}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
 	appEnv := os.Getenv(appEnvVar)
 	if appEnv == "" {
-		appEnv = "dev"
+		if v := cfg.lookupFlag("test.v"); v == nil {
+			appEnv = "dev"
+		} else {
+			appEnv = "test"
+		}
 	}
 	facet := os.Getenv(facetVar)
 	clusterName := os.Getenv(clusterNameVar)

@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"math/rand"
 	"os"
@@ -30,6 +31,7 @@ func (s *mockSource) GetParameters(params []param) (map[param]interface{}, error
 func TestNewAppEnv(t *testing.T) {
 	type args struct {
 		serviceName string
+		opts        []appEnvOpt
 	}
 	type testCase struct {
 		name string
@@ -41,8 +43,20 @@ func TestNewAppEnv(t *testing.T) {
 		func() testCase {
 			return testCase{
 				name: "default",
-				args: args{serviceName: serviceName},
+				args: args{
+					serviceName: serviceName,
+					opts: []appEnvOpt{withLookupFlag(func(name string) *flag.Flag {
+						return nil
+					})},
+				},
 				want: AppEnv{Name: "dev", ServiceName: serviceName},
+			}
+		},
+		func() testCase {
+			return testCase{
+				name: "test",
+				args: args{serviceName: serviceName},
+				want: AppEnv{Name: "test", ServiceName: serviceName},
 			}
 		},
 		func() testCase {
@@ -94,7 +108,7 @@ func TestNewAppEnv(t *testing.T) {
 					return
 				}
 			}()
-			got := NewAppEnv(tt.args.serviceName)
+			got := NewAppEnv(tt.args.serviceName, tt.args.opts...)
 			assert.Equal(t, tt.want, got)
 		})
 	}

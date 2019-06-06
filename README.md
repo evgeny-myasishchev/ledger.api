@@ -15,6 +15,17 @@ Env vars:
 
 Docker and docker-compose assumed to be installed on a dev host.
 
+Logs are written to STDOUT or test.log (when running tests). Log format is json compatible with [pino](github.com/pinojs/pino) so [pino-pretty](https://github.com/pinojs/pino-pretty) can be used to watch the output. Some snippets are below:
+
+```
+# Install pino-pretty
+nvm use
+npm i -g pino-pretty
+
+# Tailf tests
+tailf test.log | npx pino-pretty
+```
+
 ### go
 
 To run it please make sure you have golang installed. 

@@ -2,7 +2,11 @@ package main
 
 import (
 	"ledger.api/config"
+	"ledger.api/pkg/app"
 	"ledger.api/pkg/core/diag"
+	"ledger.api/pkg/core/router"
+	"ledger.api/pkg/ledgers"
+	"ledger.api/pkg/transactions"
 
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
@@ -35,11 +39,26 @@ func main() {
 		setup.SetLogLevel(cfg.StringParam(config.LogLevel).Value())
 	})
 
-	// db := app.OpenGormConnection(cfg.StringParam(config.DbURL).Value())
-	// defer db.Close()
+	db := app.OpenGormConnection(cfg.StringParam(config.DbURL).Value())
+	defer db.Close()
 
-	// ledgersSvc := ledgers.CreateQueryService(db)
-	// transactonsQuerySvc := transactions.CreateQueryService(db)
+	ledgersSvc := ledgers.CreateQueryService(db)
+	transactonsQuerySvc := transactions.CreateQueryService(db)
+
+	port := cfg.IntParam(config.ServerPort).Value()
+	logger.Info(nil, "Starting server on port: %v", port)
+	err := router.StartServer(port, func(r router.Router) {
+		r.Use(diag.NewRequestIDMiddleware())
+		r.Use(diag.NewLogRequestsMiddleware())
+
+		app.SetupRoutes(r)
+		ledgers.SetupRoutes(r, ledgersSvc)
+		transactions.SetupRoutes(r, transactonsQuerySvc)
+	})
+	if err != nil {
+		logger.WithError(err).Error(nil, "Failed to start server")
+		panic(err)
+	}
 
 	// handler := server.
 	// 	CreateHTTPApp(server.HTTPAppConfig{Env: "dev"}).

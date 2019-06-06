@@ -6,9 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/satori/go.uuid"
+	"ledger.api/pkg/core/router"
 
 	"github.com/icrowley/fake"
+	uuid "github.com/satori/go.uuid"
 	. "github.com/smartystreets/goconvey/convey"
 	"ledger.api/pkg/internal/ldtesting"
 )
@@ -43,11 +44,11 @@ func (svc *mockQueryService) processUserLedgersQuery(ctx context.Context, query 
 	return result, nil
 }
 
-func setupRouter() (*mockQueryService, *server.HTTPApp) {
+func setupRouter() (*mockQueryService, router.Router) {
 	svc := mockQueryService{processUserLedgersQueryCalls: []methodCall{}}
-	return &svc, server.
-		CreateHTTPApp(server.HTTPAppConfig{Env: "test"}).
-		RegisterRoutes(CreateRoutes(&svc))
+	appRouter := router.CreateRouter()
+	SetupRoutes(appRouter, &svc)
+	return &svc, appRouter
 }
 
 func TestCreateRoute(t *testing.T) {
@@ -56,11 +57,8 @@ func TestCreateRoute(t *testing.T) {
 		recorder := httptest.NewRecorder()
 
 		Convey("When route is GET index", func() {
-			req := ldtesting.NewRequest(
-				"GET",
-				"/v2/ledgers",
-				ldtesting.WithScopeClaim("read:ledgers"))
-			router.CreateHandler().ServeHTTP(recorder, req)
+			req := ldtesting.NewRequest("GET", "/v2/ledgers", ldtesting.WithScopeClaim("read:ledgers"))
+			router.ServeHTTP(recorder, req)
 
 			Convey("It should respond with user ledgers fetched via query service", func() {
 				So(len(svc.processUserLedgersQueryCalls), ShouldEqual, 1)
@@ -78,5 +76,7 @@ func TestCreateRoute(t *testing.T) {
 				So(recorder.Code, ShouldEqual, 200)
 			})
 		})
+
+		// TODO: Fail without scope
 	})
 }

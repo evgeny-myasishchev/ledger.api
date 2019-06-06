@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -114,6 +116,13 @@ func NewLocalSource(opts ...LocalOpt) (Source, error) {
 	source := &localSource{
 		configFiles: []string{"default.json"},
 	}
+
+	if _, file, _, ok := runtime.Caller(0); ok == true {
+		source.dir = filepath.Join(file, "..", "..", "..", "..", "config")
+	} else {
+		panic("Can not resolve config dir")
+	}
+
 	for _, opt := range opts {
 		opt(source)
 	}

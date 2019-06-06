@@ -21,7 +21,6 @@ func (b *Builder) WithLocalSource() SourceFactory {
 	return func() (Source, error) {
 		return NewLocalSource(
 			WithAppEnv(b.appEnv),
-			WithDir("config"),
 			WithIgnoreDefaultService(),
 		)
 	}

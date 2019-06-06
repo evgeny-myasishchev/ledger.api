@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -20,6 +22,44 @@ func ensureTmpDir(name string) string {
 		panic(err)
 	}
 	return tmpDir
+}
+
+func TestLocalSource_NewLocalSource(t *testing.T) {
+	type fields struct {
+		opts []LocalOpt
+	}
+	type args struct {
+		params []param
+	}
+	type testCase struct {
+		name string
+		run  func(t *testing.T, src *localSource, err error)
+	}
+
+	tests := []func() testCase{
+		func() testCase {
+			return testCase{
+				name: "default dir",
+				run: func(t *testing.T, src *localSource, err error) {
+					var expectedSource string
+					if _, file, _, ok := runtime.Caller(0); ok == true {
+						expectedSource = filepath.Join(file, "..", "..", "..", "..", "config")
+					} else {
+						panic("Can not get project root")
+					}
+					assert.Equal(t, expectedSource, src.dir)
+				},
+			}
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt()
+		t.Run(tt.name, func(t *testing.T) {
+			src, err := NewLocalSource()
+			tt.run(t, src.(*localSource), err)
+		})
+	}
 }
 
 func TestLocalSource_GetParameters(t *testing.T) {

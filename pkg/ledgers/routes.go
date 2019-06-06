@@ -2,21 +2,25 @@ package ledgers
 
 import (
 	"net/http"
+
+	"ledger.api/pkg/core/router"
 )
 
-// CreateRoutes - Register ledger related routes
-func CreateRoutes(svc QueryService) server.Routes {
-	return func(router *server.Router) {
-		router.GET("/v2/ledgers", server.RequireScopes(createGetLedgersHandler(svc), "read:ledgers"))
+func createGetLedgersHandler(svc QueryService) router.ToolkitHandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request, h router.HandlerToolkit) error {
+		result, err := svc.processUserLedgersQuery(r.Context(), &userLedgersQuery{})
+		if err != nil {
+			return err
+		}
+		return h.WriteJSON(result)
 	}
 }
 
-func createGetLedgersHandler(svc QueryService) server.HandlerFunc {
-	return func(req *http.Request, h *server.HandlerToolkit) (*server.Response, error) {
-		result, err := svc.processUserLedgersQuery(req.Context(), &userLedgersQuery{})
-		if err != nil {
-			return nil, err
-		}
-		return h.Response(result), nil
-	}
+// SetupRoutes - Register ledger related routes
+func SetupRoutes(appRouter router.Router, svc QueryService) {
+
+	// TODO
+	// server.RequireScopes(createGetLedgersHandler(svc), "read:ledgers")
+
+	appRouter.Handle("GET", "/v2/ledgers", createGetLedgersHandler(svc))
 }

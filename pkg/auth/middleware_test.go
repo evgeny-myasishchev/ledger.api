@@ -1,9 +1,12 @@
 package auth
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	tst "ledger.api/pkg/internal/testing"
 
 	"github.com/auth0-community/go-auth0"
 
@@ -97,6 +100,82 @@ func TestMiddleware(t *testing.T) {
 					}
 					assert.Equal(t, expectedScope, actualClaims.Scope)
 					v.AssertExpectations(t)
+				},
+			}
+		},
+		func() testCase {
+			v := &mockValidator{}
+			return testCase{
+				name: "invalid token",
+				args: args{setup: []MiddlewareOpt{withValidator(v)}},
+				run: func(t *testing.T, mw router.MiddlewareFunc) {
+
+					req := httptest.NewRequest("GET", "/some-path", nil)
+					recorder := httptest.NewRecorder()
+					nextCalled := false
+
+					err := errors.New(faker.Sentence())
+					v.On("ValidateRequest", req).Return((*jwt.JSONWebToken)(nil), err)
+
+					next := func(w http.ResponseWriter, req *http.Request) {
+						nextCalled = true
+					}
+					mw(next)(recorder, req)
+					if !assert.False(t, nextCalled) {
+						return
+					}
+					v.AssertExpectations(t)
+
+					assert.Equal(t, http.StatusUnauthorized, recorder.Code)
+
+					var httpError router.HTTPError
+					if !tst.JSONUnmarshalReader(t, recorder.Body, &httpError) {
+						return
+					}
+					assert.Equal(t, router.HTTPError{
+						StatusCode: http.StatusUnauthorized,
+						Status:     http.StatusText(http.StatusUnauthorized),
+						Message:    "Token validation failed",
+					}, httpError)
+				},
+			}
+		},
+		func() testCase {
+			v := &mockValidator{}
+			return testCase{
+				name: "invalid token claims",
+				args: args{setup: []MiddlewareOpt{withValidator(v)}},
+				run: func(t *testing.T, mw router.MiddlewareFunc) {
+
+					req := httptest.NewRequest("GET", "/some-path", nil)
+					recorder := httptest.NewRecorder()
+					nextCalled := false
+
+					err := errors.New(faker.Sentence())
+					token := &jwt.JSONWebToken{}
+					v.On("ValidateRequest", req).Return(token, nil)
+					v.On("Claims", req, token, mock.Anything).Return(err)
+
+					next := func(w http.ResponseWriter, req *http.Request) {
+						nextCalled = true
+					}
+					mw(next)(recorder, req)
+					if !assert.False(t, nextCalled) {
+						return
+					}
+					v.AssertExpectations(t)
+
+					assert.Equal(t, http.StatusUnauthorized, recorder.Code)
+
+					var httpError router.HTTPError
+					if !tst.JSONUnmarshalReader(t, recorder.Body, &httpError) {
+						return
+					}
+					assert.Equal(t, router.HTTPError{
+						StatusCode: http.StatusUnauthorized,
+						Status:     http.StatusText(http.StatusUnauthorized),
+						Message:    "Bad token",
+					}, httpError)
 				},
 			}
 		},

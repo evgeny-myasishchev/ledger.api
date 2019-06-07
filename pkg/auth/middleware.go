@@ -3,6 +3,8 @@ package auth
 import (
 	"net/http"
 
+	"ledger.api/pkg/core/router"
+
 	"github.com/auth0-community/go-auth0"
 )
 
@@ -29,23 +31,32 @@ func NewMiddleware(setup ...MiddlewareOpt) func(next http.HandlerFunc) http.Hand
 	}
 	validator := cfg.validator
 	return func(next http.HandlerFunc) http.HandlerFunc {
+		respondUnauthorized := func(w http.ResponseWriter, message string) {
+			errorResponse := &router.HTTPError{
+				StatusCode: http.StatusUnauthorized,
+				Status:     http.StatusText(http.StatusUnauthorized),
+				Message:    message,
+			}
+			errorResponse.Send(w)
+		}
 		return func(w http.ResponseWriter, req *http.Request) {
 			token, err := validator.ValidateRequest(req)
 			if err != nil {
+				// Not failing if no token found
+				// Authorization is a subject of another middleware
 				if err == auth0.ErrTokenNotFound {
 					logger.Debug(req.Context(), "No token found")
 					next(w, req)
 					return
 				}
 				logger.WithError(err).Error(req.Context(), "Token validation failed")
-				// TODO: Respond with error
-				// TODO: Ignore token not found error
+				respondUnauthorized(w, "Token validation failed")
 				return
 			}
 			claims := LedgerClaims{}
 			if err := validator.Claims(req, token, &claims); err != nil {
-				//TODO: Respond with error
 				logger.WithError(err).Error(req.Context(), "Failed to get claims")
+				respondUnauthorized(w, "Bad token")
 				return
 			}
 
@@ -56,53 +67,6 @@ func NewMiddleware(setup ...MiddlewareOpt) func(next http.HandlerFunc) http.Hand
 		}
 	}
 }
-
-// CreateAuthMiddlewareFunc returns auth middleware func that creates auth middleware
-// TODO: Port this stuff
-// func CreateAuthMiddlewareFunc(params AuthMiddlewareParams) RouterMiddlewareFunc {
-// 	validator := params.Validator
-// 	whitelistedRoutes := params.WhitelistedRoutes
-// 	shouldWhitelist := func(err error, req *http.Request) bool {
-// 		if whitelistedRoutes == nil {
-// 			return false
-// 		}
-// 		if err != auth0.ErrTokenNotFound {
-// 			return false
-// 		}
-// 		path := strings.TrimRight(req.URL.Path, "/")
-// 		return whitelistedRoutes[path]
-// 	}
-
-// 	return func(next http.HandlerFunc) http.HandlerFunc {
-// 		return func(w http.ResponseWriter, req *http.Request) {
-// 			logger := logging.FromContext(req.Context())
-// 			token, err := validator.ValidateRequest(req)
-// 			if err != nil {
-// 				if shouldWhitelist(err, req) {
-// 					next(w, req)
-// 					return
-// 				}
-// 				logger.WithError(err).Error("Token validation failed")
-// 				respondWithErrorStatus(w, http.StatusUnauthorized)
-// 				return
-// 			}
-
-// 			claims := auth.LedgerClaims{}
-
-// 			validator.Claims(req, token, &claims)
-// 			if err != nil {
-// 				logger.WithError(err).Error("Failed to get claims")
-// 				respondWithErrorStatus(w, http.StatusUnauthorized)
-// 				return
-// 			}
-
-// 			nextContext := auth.ContextWithClaims(req.Context(), &claims)
-// 			nextReq := req.WithContext(nextContext)
-
-// 			next(w, nextReq)
-// 		}
-// 	}
-// }
 
 // // RequireScopes action handler middleware wrapper that will
 // // verify if scope claim of a token includes scopes provided

@@ -1,6 +1,10 @@
 package auth
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/auth0-community/go-auth0"
+)
 
 type middlewareCfg struct {
 	validator RequestValidator
@@ -19,9 +23,36 @@ func withValidator(v RequestValidator) MiddlewareOpt {
 
 // NewMiddleware creates auth middleware that will validate token presense and token validity
 func NewMiddleware(setup ...MiddlewareOpt) func(next http.HandlerFunc) http.HandlerFunc {
+	cfg := middlewareCfg{}
+	for _, opt := range setup {
+		opt(&cfg)
+	}
+	validator := cfg.validator
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, req *http.Request) {
-			next(w, req)
+			token, err := validator.ValidateRequest(req)
+			if err != nil {
+				if err == auth0.ErrTokenNotFound {
+					logger.Debug(req.Context(), "No token found")
+					next(w, req)
+					return
+				}
+				logger.WithError(err).Error(req.Context(), "Token validation failed")
+				// TODO: Respond with error
+				// TODO: Ignore token not found error
+				return
+			}
+			claims := LedgerClaims{}
+			if err := validator.Claims(req, token, &claims); err != nil {
+				//TODO: Respond with error
+				logger.WithError(err).Error(req.Context(), "Failed to get claims")
+				return
+			}
+
+			nextContext := ContextWithClaims(req.Context(), &claims)
+			nextReq := req.WithContext(nextContext)
+
+			next(w, nextReq)
 		}
 	}
 }

@@ -5,6 +5,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/auth0-community/go-auth0"
+
+	"github.com/bxcodec/faker/v3"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/stretchr/testify/mock"
@@ -15,13 +19,19 @@ import (
 
 type mockValidator struct {
 	mock.Mock
+	initClaims func(...interface{})
 }
 
 func (v *mockValidator) ValidateRequest(r *http.Request) (*jwt.JSONWebToken, error) {
-	return nil, nil
+	args := v.Called(r)
+	return args.Get(0).(*jwt.JSONWebToken), args.Error(1)
 }
 func (v *mockValidator) Claims(r *http.Request, token *jwt.JSONWebToken, values ...interface{}) error {
-	return nil
+	args := v.Called(r, token)
+	if v.initClaims != nil {
+		v.initClaims(values...)
+	}
+	return args.Error(0)
 }
 
 func TestMiddleware(t *testing.T) {
@@ -41,6 +51,7 @@ func TestMiddleware(t *testing.T) {
 				args: args{setup: []MiddlewareOpt{withValidator(v)}},
 				run: func(t *testing.T, mw router.MiddlewareFunc) {
 					req := httptest.NewRequest("GET", "/some-path", nil)
+					v.On("ValidateRequest", req).Return((*jwt.JSONWebToken)(nil), auth0.ErrTokenNotFound)
 					recorder := httptest.NewRecorder()
 					nextCalled := false
 					next := func(w http.ResponseWriter, req *http.Request) {
@@ -48,6 +59,44 @@ func TestMiddleware(t *testing.T) {
 					}
 					mw(next)(recorder, req)
 					assert.True(t, nextCalled)
+				},
+			}
+		},
+		func() testCase {
+			v := &mockValidator{}
+			return testCase{
+				name: "valid token",
+				args: args{setup: []MiddlewareOpt{withValidator(v)}},
+				run: func(t *testing.T, mw router.MiddlewareFunc) {
+
+					req := httptest.NewRequest("GET", "/some-path", nil)
+					recorder := httptest.NewRecorder()
+					nextCalled := false
+					expectedScope := "scope-" + faker.Word()
+
+					token := &jwt.JSONWebToken{}
+					v.On("ValidateRequest", req).Return(token, nil)
+					v.On("Claims", req, token, mock.Anything).Return(nil)
+					v.initClaims = func(targets ...interface{}) {
+						if !assert.Len(t, targets, 1) {
+							return
+						}
+						claims := targets[0].(*LedgerClaims)
+						claims.Scope = expectedScope
+					}
+
+					var actualClaims *LedgerClaims
+					next := func(w http.ResponseWriter, req *http.Request) {
+						actualClaims = ClaimsFromContext(req.Context())
+						nextCalled = true
+					}
+					mw(next)(recorder, req)
+					assert.True(t, nextCalled)
+					if !assert.NotNil(t, actualClaims) {
+						return
+					}
+					assert.Equal(t, expectedScope, actualClaims.Scope)
+					v.AssertExpectations(t)
 				},
 			}
 		},

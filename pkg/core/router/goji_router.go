@@ -88,7 +88,7 @@ func (g *gojiRouter) Handle(method string, pattern string, handler ToolkitHandle
 	})
 }
 
-func (g *gojiRouter) Use(mw func(next http.HandlerFunc) http.HandlerFunc) {
+func (g *gojiRouter) Use(mw MiddlewareFunc) {
 	g.mux.Use(func(h http.Handler) http.Handler {
 		return mw(h.ServeHTTP)
 	})

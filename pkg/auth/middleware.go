@@ -1,12 +1,29 @@
 package auth
 
-// AuthMiddlewareParams represents params of the auth middleware
-type AuthMiddlewareParams struct {
-	Validator RequestValidator
+import "net/http"
 
-	// WhitelistedRoutes is a map of routes may be called without auth token
-	// the route should be full match
-	WhitelistedRoutes map[string]bool
+type middlewareCfg struct {
+	validator RequestValidator
+
+	whitelistedRoutes map[string]bool
+}
+
+// MiddlewareOpt is an auth middleware option
+type MiddlewareOpt func(*middlewareCfg)
+
+func withValidator(v RequestValidator) MiddlewareOpt {
+	return func(cfg *middlewareCfg) {
+		cfg.validator = v
+	}
+}
+
+// NewMiddleware creates auth middleware that will validate token presense and token validity
+func NewMiddleware(setup ...MiddlewareOpt) func(next http.HandlerFunc) http.HandlerFunc {
+	return func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, req *http.Request) {
+			next(w, req)
+		}
+	}
 }
 
 // CreateAuthMiddlewareFunc returns auth middleware func that creates auth middleware

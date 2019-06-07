@@ -75,15 +75,7 @@ func (g *gojiRouter) Handle(method string, pattern string, handler ToolkitHandle
 		if err != nil {
 			logger.WithError(err).Error(r.Context(), "Failed to process request")
 			errorResponse := newHTTPErrorFromError(err)
-			errorData, err := json.Marshal(errorResponse)
-			if err != nil {
-				panic(err)
-			}
-			w.Header().Set("content-type", "application/json")
-			w.WriteHeader(errorResponse.StatusCode)
-			if _, err := w.Write(errorData); err != nil {
-				panic(err)
-			}
+			errorResponse.Send(w)
 		}
 	})
 }

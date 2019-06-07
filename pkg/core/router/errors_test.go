@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"net/http/httptest"
 	"testing"
+
+	tst "ledger.api/pkg/internal/testing"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/stretchr/testify/assert"
@@ -139,4 +142,47 @@ func Test_errorResponse_Error(t *testing.T) {
 
 	actual := err.Error()
 	assert.Equal(t, fmt.Sprintf("[%v](%v): %v", statusCode, statusText, message), actual)
+}
+
+func TestHTTPError_Send(t *testing.T) {
+	type args struct {
+		err HTTPError
+	}
+	type testCase struct {
+		name string
+		args args
+		want func(t *testing.T, recorder *httptest.ResponseRecorder)
+	}
+	tests := []func() testCase{
+		func() testCase {
+			statusCode := 400 + rand.Intn(10)
+			err := HTTPError{
+				StatusCode: statusCode,
+				Status:     http.StatusText(statusCode),
+				Message:    faker.Sentence(),
+			}
+			return testCase{
+				name: "write http error",
+				args: args{err: err},
+				want: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+					assert.Equal(t, statusCode, recorder.Code)
+					assert.Equal(t, "application/json", recorder.Header().Get("content-type"))
+
+					var got HTTPError
+					if !tst.JSONUnmarshalReader(t, recorder.Body, &got) {
+						return
+					}
+					assert.Equal(t, err, got)
+				},
+			}
+		},
+	}
+	for _, tt := range tests {
+		tt := tt()
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			tt.args.err.Send(w)
+			tt.want(t, w)
+		})
+	}
 }

@@ -1,6 +1,7 @@
 package router
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -14,6 +15,20 @@ type HTTPError struct {
 
 func (e HTTPError) Error() string {
 	return fmt.Sprintf("[%v](%v): %v", e.StatusCode, e.Status, e.Message)
+}
+
+// Send will marshal and send the error response to the client
+// panic if failed to send
+func (e HTTPError) Send(w http.ResponseWriter) {
+	errorData, err := json.Marshal(e)
+	if err != nil {
+		panic(err)
+	}
+	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(e.StatusCode)
+	if _, err := w.Write(errorData); err != nil {
+		panic(err)
+	}
 }
 
 // NewHTTPError - creates a generic http error

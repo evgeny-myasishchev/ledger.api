@@ -170,6 +170,13 @@ type HandlerToolkit interface {
 // ToolkitHandlerFunc - a little extension of a builtin HandlerFunc
 type ToolkitHandlerFunc func(w http.ResponseWriter, req *http.Request, h HandlerToolkit) error
 
+// ServeHTTP is an implementation of http.Handler. This allows ToolkitHandlerFunc to be used
+// in place of the http.Handler
+// TODO: Investigate this, perhaps use HandlerFunc function to be more clear
+func (f ToolkitHandlerFunc) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	panic("Not implemented")
+}
+
 // MiddlewareFunc is a function that can be injected into a request chain
 type MiddlewareFunc func(next http.HandlerFunc) http.HandlerFunc
 

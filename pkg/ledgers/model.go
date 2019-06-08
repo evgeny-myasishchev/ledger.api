@@ -25,6 +25,7 @@ type dbQueryService struct {
 }
 
 func (svc *dbQueryService) processUserLedgersQuery(ctx context.Context, query *userLedgersQuery) ([]ledgerDTO, error) {
+	// TODO: Make it per user somehow
 	result := []ledgerDTO{}
 	if err := svc.db.Table("projections_ledgers ldr").
 		Select("ldr.aggregate_id, ldr.name, ldr.currency_code").

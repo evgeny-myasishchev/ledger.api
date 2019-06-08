@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -225,19 +224,55 @@ func TestParamsBinder(t *testing.T) {
 	}
 }
 
-func TestToolkitHandlerFunc_HandlerFunc(t *testing.T) {
-	tests := []struct {
+func TestToolkitHandlerFunc_ServeHTTP(t *testing.T) {
+	type args struct {
+		validator *structValidator
+	}
+	type testCase struct {
 		name string
-		f    ToolkitHandlerFunc
-		want http.HandlerFunc
-	}{
-		// TODO: Add test cases.
+		args args
+		run  func(*testing.T, *http.Request, *httptest.ResponseRecorder)
+	}
+	tests := []func() testCase{
+		func() testCase {
+			validator := newStructValidator()
+			return testCase{
+				name: "invoke handler with toolkit",
+				args: args{validator: validator},
+				run: func(t *testing.T, req *http.Request, recorder *httptest.ResponseRecorder) {
+					fnCalled := false
+					fn := ToolkitHandlerFunc(func(w http.ResponseWriter, r *http.Request, h HandlerToolkit) error {
+						fnCalled = true
+						assert.Equal(t, req, r)
+						assert.Equal(t, w, recorder)
+
+						toolkit := h.(*gojiHandlerToolkit)
+						if !assert.NotNil(t, toolkit) {
+							return nil
+						}
+
+						assert.Equal(t, r, toolkit.request)
+						assert.Equal(t, w, toolkit.responseWriter)
+						assert.Equal(t, validator, toolkit.validator)
+
+						return nil
+					})
+					fn.ServeHTTP(recorder, req)
+					assert.True(t, fnCalled)
+				},
+			}
+		},
 	}
 	for _, tt := range tests {
+		tt := tt()
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.f.HandlerFunc(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ToolkitHandlerFunc.HandlerFunc() = %v, want %v", got, tt.want)
-			}
+			req := httptest.NewRequest("GET", "/some-path", nil)
+			recorder := httptest.NewRecorder()
+
+			nextContext := context.WithValue(req.Context(), validatorRequestKey, tt.args.validator)
+			req = req.WithContext(nextContext)
+
+			tt.run(t, req, recorder)
 		})
 	}
 }

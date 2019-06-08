@@ -14,6 +14,12 @@ import (
 
 var logger = diag.CreateLogger()
 
+type contextKey string
+
+const (
+	validatorRequestKey contextKey = "validator"
+)
+
 // RequestParamType represents type of a request parameter
 type RequestParamType string
 
@@ -174,7 +180,12 @@ type ToolkitHandlerFunc func(w http.ResponseWriter, req *http.Request, h Handler
 // in place of the http.Handler
 // TODO: Investigate this, perhaps use HandlerFunc function to be more clear
 func (f ToolkitHandlerFunc) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	panic("Not implemented")
+	toolkit := gojiHandlerToolkit{
+		request:        req,
+		responseWriter: w,
+		validator:      req.Context().Value(validatorRequestKey).(*structValidator),
+	}
+	f(w, req, &toolkit)
 }
 
 // MiddlewareFunc is a function that can be injected into a request chain

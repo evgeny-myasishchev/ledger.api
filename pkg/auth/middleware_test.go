@@ -188,10 +188,10 @@ func TestAuthorizeRequest(t *testing.T) {
 				name: "fails if no claims",
 				run: func(t *testing.T, req *http.Request, recorder *httptest.ResponseRecorder) {
 					nextCalled := false
-					next := func(w http.ResponseWriter, req *http.Request) {
+					next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 						nextCalled = true
-					}
-					AuthorizeRequest(next)(recorder, req)
+					})
+					AuthorizeRequest(next).ServeHTTP(recorder, req)
 					if !assert.False(t, nextCalled) {
 						return
 					}
@@ -210,11 +210,11 @@ func TestAuthorizeRequest(t *testing.T) {
 				run: func(t *testing.T, req *http.Request, recorder *httptest.ResponseRecorder) {
 					nextCalled := false
 					nextStatus := rand.Intn(400)
-					next := func(w http.ResponseWriter, req *http.Request) {
+					next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 						nextCalled = true
 						w.WriteHeader(nextStatus)
-					}
-					AuthorizeRequest(next)(recorder, req)
+					})
+					AuthorizeRequest(next).ServeHTTP(recorder, req)
 					if !assert.True(t, nextCalled) {
 						return
 					}

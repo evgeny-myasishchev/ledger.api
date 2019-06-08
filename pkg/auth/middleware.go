@@ -84,7 +84,7 @@ func AllowScope(scope ...string) AuthorizeOpt {
 
 // AuthorizeRequest is a request handler wrapper to validate token presence
 // and optionally validate if token includes particular scope
-func AuthorizeRequest(next http.HandlerFunc, setup ...AuthorizeOpt) http.HandlerFunc {
+func AuthorizeRequest(next http.Handler, setup ...AuthorizeOpt) http.Handler {
 	respondForbidden := func(w http.ResponseWriter, message string) {
 		errorResponse := &router.HTTPError{
 			StatusCode: http.StatusForbidden,
@@ -94,14 +94,14 @@ func AuthorizeRequest(next http.HandlerFunc, setup ...AuthorizeOpt) http.Handler
 		errorResponse.Send(w)
 	}
 
-	return func(w http.ResponseWriter, req *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		claims := ClaimsFromContext(req.Context())
 		if claims == nil {
 			respondForbidden(w, "Access token not found")
 			return
 		}
-		next(w, req)
-	}
+		next.ServeHTTP(w, req)
+	})
 }
 
 // // RequireScopes action handler middleware wrapper that will

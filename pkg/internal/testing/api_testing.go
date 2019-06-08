@@ -22,9 +22,11 @@ func NewTestRequest(method string, url string, body io.Reader) *http.Request {
 // AssertHTTPErrorResponse asserts if the response is http error response
 func AssertHTTPErrorResponse(t *testing.T, expected router.HTTPError, recorder *httptest.ResponseRecorder) {
 	var httpError router.HTTPError
+	if !assert.Equal(t, expected.StatusCode, recorder.Code) {
+		return
+	}
 	if !JSONUnmarshalReader(t, recorder.Body, &httpError) {
 		return
 	}
 	assert.Equal(t, expected, httpError)
-	assert.Equal(t, expected.StatusCode, recorder.Code)
 }

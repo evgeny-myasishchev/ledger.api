@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/auth0-community/go-auth0"
@@ -222,10 +223,67 @@ func TestAuthorizeRequest(t *testing.T) {
 				},
 			}
 		},
+		func() testCase {
+			allowedScope := "scope-" + faker.Word()
+			actualScope := strings.Join(
+				[]string{
+					"actual-scope1-" + faker.Word(),
+					"actual-scope2-" + faker.Word(),
+					allowedScope,
+					"actual-scope3-" + faker.Word(),
+				},
+				" ",
+			)
+			return testCase{
+				name: "pass if allowed scope present",
+				args: args{claims: &LedgerClaims{Scope: actualScope}},
+				run: func(t *testing.T, req *http.Request, recorder *httptest.ResponseRecorder) {
+					nextCalled := false
+					nextStatus := rand.Intn(400)
+					next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+						nextCalled = true
+						w.WriteHeader(nextStatus)
+					})
+					AuthorizeRequest(next, AllowScope(allowedScope)).ServeHTTP(recorder, req)
+					if !assert.True(t, nextCalled) {
+						return
+					}
+					assert.Equal(t, nextStatus, recorder.Code)
+				},
+			}
+		},
+		func() testCase {
+			allowedScope := "allowedScope-" + faker.Word()
+			actualScope := strings.Join(
+				[]string{
+					"actual-scope1-" + faker.Word(),
+					"actual-scope2-" + faker.Word(),
+					"actual-scope3-" + faker.Word(),
+				},
+				" ",
+			)
+			return testCase{
+				name: "fail if no allowed scope present",
+				args: args{claims: &LedgerClaims{Scope: actualScope}},
+				run: func(t *testing.T, req *http.Request, recorder *httptest.ResponseRecorder) {
+					nextCalled := false
+					next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+						nextCalled = true
+					})
+					AuthorizeRequest(next, AllowScope(allowedScope)).ServeHTTP(recorder, req)
+					if !assert.False(t, nextCalled) {
+						return
+					}
+					tst.AssertHTTPErrorResponse(t, router.HTTPError{
+						StatusCode: http.StatusForbidden,
+						Status:     http.StatusText(http.StatusForbidden),
+						Message:    "Missing scope: " + allowedScope,
+					}, recorder)
+				},
+			}
+		},
 	}
 
-	// TODO: pass if allowed scope present
-	// TODO: fail if missing scope
 	for _, tt := range tests {
 		tt := tt()
 		t.Run(tt.name, func(t *testing.T) {

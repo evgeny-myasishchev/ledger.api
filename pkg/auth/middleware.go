@@ -2,6 +2,7 @@ package auth
 
 import (
 	"net/http"
+	"strings"
 
 	"ledger.api/pkg/core/router"
 
@@ -85,6 +86,11 @@ func AllowScope(scope ...string) AuthorizeOpt {
 // AuthorizeRequest is a request handler wrapper to validate token presence
 // and optionally validate if token includes particular scope
 func AuthorizeRequest(next http.Handler, setup ...AuthorizeOpt) http.Handler {
+	cfg := &authorizeRequestCfg{}
+	for _, opt := range setup {
+		opt(cfg)
+	}
+
 	respondForbidden := func(w http.ResponseWriter, message string) {
 		errorResponse := &router.HTTPError{
 			StatusCode: http.StatusForbidden,
@@ -94,11 +100,30 @@ func AuthorizeRequest(next http.Handler, setup ...AuthorizeOpt) http.Handler {
 		errorResponse.Send(w)
 	}
 
+	toStringSet := func(strings []string) map[string]bool {
+		result := make(map[string]bool, len(strings))
+		for _, str := range strings {
+			result[str] = true
+		}
+		return result
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		claims := ClaimsFromContext(req.Context())
 		if claims == nil {
+			logger.Info(req.Context(), "Failed to authorize request. No claims present")
 			respondForbidden(w, "Access token not found")
 			return
+		}
+		scopeTokens := toStringSet(strings.FieldsFunc(claims.Scope, func(s rune) bool {
+			return s == ' '
+		}))
+		for _, allowedScope := range cfg.allowedScope {
+			if ok := scopeTokens[allowedScope]; !ok {
+				logger.Info(req.Context(), "Failed to authorize request. Missing scopes: %v", allowedScope)
+				respondForbidden(w, "Missing scope: "+allowedScope)
+				return
+			}
 		}
 		next.ServeHTTP(w, req)
 	})

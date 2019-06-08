@@ -178,14 +178,19 @@ type ToolkitHandlerFunc func(w http.ResponseWriter, req *http.Request, h Handler
 
 // ServeHTTP is an implementation of http.Handler. This allows ToolkitHandlerFunc to be used
 // in place of the http.Handler
-// TODO: Investigate this, perhaps use HandlerFunc function to be more clear
 func (f ToolkitHandlerFunc) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	// TODO: make gojiHandlerToolkit just handlerToolkit
 	toolkit := gojiHandlerToolkit{
 		request:        req,
 		responseWriter: w,
 		validator:      req.Context().Value(validatorRequestKey).(*structValidator),
 	}
-	f(w, req, &toolkit)
+	err := f(w, req, &toolkit)
+	if err != nil {
+		logger.WithError(err).Error(req.Context(), "Failed to process request")
+		errorResponse := newHTTPErrorFromError(err)
+		errorResponse.Send(w)
+	}
 }
 
 // MiddlewareFunc is a function that can be injected into a request chain

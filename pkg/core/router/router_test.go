@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	tst "ledger.api/pkg/internal/testing"
+
 	"github.com/bxcodec/faker/v3"
 	"github.com/stretchr/testify/assert"
 )
@@ -259,6 +261,29 @@ func TestToolkitHandlerFunc_ServeHTTP(t *testing.T) {
 					})
 					fn.ServeHTTP(recorder, req)
 					assert.True(t, fnCalled)
+				},
+			}
+		},
+		func() testCase {
+			validator := newStructValidator()
+			return testCase{
+				name: "handle errors",
+				args: args{validator: validator},
+				run: func(t *testing.T, req *http.Request, recorder *httptest.ResponseRecorder) {
+					fnCalled := false
+					err := errors.New(faker.Sentence())
+					fn := ToolkitHandlerFunc(func(w http.ResponseWriter, r *http.Request, h HandlerToolkit) error {
+						fnCalled = true
+						return err
+					})
+					fn.ServeHTTP(recorder, req)
+					assert.True(t, fnCalled)
+					httpErr := newHTTPErrorFromError(err)
+					tst.AssertHTTPErrorResponse(t, tst.NewHTTPErrorPayload(
+						httpErr.StatusCode,
+						httpErr.Status,
+						httpErr.Message,
+					), recorder)
 				},
 			}
 		},

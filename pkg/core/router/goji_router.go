@@ -16,7 +16,7 @@ func (g *gojiRouter) Handle(method string, pattern string, handler http.Handler)
 }
 
 func (g *gojiRouter) Use(mw MiddlewareFunc) {
-	g.mux.Use(func(h http.Handler) http.Handler { return mw(h.ServeHTTP) })
+	g.mux.Use(func(h http.Handler) http.Handler { return mw(h) })
 }
 
 func (g *gojiRouter) pathParam(r *http.Request, name string) string {

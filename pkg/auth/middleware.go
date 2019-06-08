@@ -24,14 +24,14 @@ func withValidator(v RequestValidator) MiddlewareOpt {
 	}
 }
 
-// NewMiddleware creates auth middleware that will validate token presense and token validity
-func NewMiddleware(setup ...MiddlewareOpt) func(next http.HandlerFunc) http.HandlerFunc {
+// NewMiddleware creates auth middleware that will validate token if present and inject claims into a context
+func NewMiddleware(setup ...MiddlewareOpt) router.MiddlewareFunc {
 	cfg := middlewareCfg{}
 	for _, opt := range setup {
 		opt(&cfg)
 	}
 	validator := cfg.validator
-	return func(next http.HandlerFunc) http.HandlerFunc {
+	return func(next http.Handler) http.Handler {
 		respondUnauthorized := func(w http.ResponseWriter, message string) {
 			errorResponse := &router.HTTPError{
 				StatusCode: http.StatusUnauthorized,
@@ -40,14 +40,14 @@ func NewMiddleware(setup ...MiddlewareOpt) func(next http.HandlerFunc) http.Hand
 			}
 			errorResponse.Send(w)
 		}
-		return func(w http.ResponseWriter, req *http.Request) {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			token, err := validator.ValidateRequest(req)
 			if err != nil {
 				// Not failing if no token found
 				// Authorization is a subject of another middleware
 				if err == auth0.ErrTokenNotFound {
 					logger.Debug(req.Context(), "No token found")
-					next(w, req)
+					next.ServeHTTP(w, req)
 					return
 				}
 				logger.WithError(err).Error(req.Context(), "Token validation failed")
@@ -64,8 +64,8 @@ func NewMiddleware(setup ...MiddlewareOpt) func(next http.HandlerFunc) http.Hand
 			nextContext := ContextWithClaims(req.Context(), &claims)
 			nextReq := req.WithContext(nextContext)
 
-			next(w, nextReq)
-		}
+			next.ServeHTTP(w, nextReq)
+		})
 	}
 }
 

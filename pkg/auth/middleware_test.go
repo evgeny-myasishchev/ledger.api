@@ -54,10 +54,10 @@ func TestMiddleware(t *testing.T) {
 					v.On("ValidateRequest", req).Return((*jwt.JSONWebToken)(nil), auth0.ErrTokenNotFound)
 					recorder := httptest.NewRecorder()
 					nextCalled := false
-					next := func(w http.ResponseWriter, req *http.Request) {
+					next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 						nextCalled = true
-					}
-					mw(next)(recorder, req)
+					})
+					mw(next).ServeHTTP(recorder, req)
 					assert.True(t, nextCalled)
 				},
 			}
@@ -86,11 +86,11 @@ func TestMiddleware(t *testing.T) {
 					}
 
 					var actualClaims *LedgerClaims
-					next := func(w http.ResponseWriter, req *http.Request) {
+					next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 						actualClaims = ClaimsFromContext(req.Context())
 						nextCalled = true
-					}
-					mw(next)(recorder, req)
+					})
+					mw(next).ServeHTTP(recorder, req)
 					assert.True(t, nextCalled)
 					if !assert.NotNil(t, actualClaims) {
 						return
@@ -114,10 +114,10 @@ func TestMiddleware(t *testing.T) {
 					err := errors.New(faker.Sentence())
 					v.On("ValidateRequest", req).Return((*jwt.JSONWebToken)(nil), err)
 
-					next := func(w http.ResponseWriter, req *http.Request) {
+					next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 						nextCalled = true
-					}
-					mw(next)(recorder, req)
+					})
+					mw(next).ServeHTTP(recorder, req)
 					if !assert.False(t, nextCalled) {
 						return
 					}
@@ -147,10 +147,10 @@ func TestMiddleware(t *testing.T) {
 					v.On("ValidateRequest", req).Return(token, nil)
 					v.On("Claims", req, token, mock.Anything).Return(err)
 
-					next := func(w http.ResponseWriter, req *http.Request) {
+					next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 						nextCalled = true
-					}
-					mw(next)(recorder, req)
+					})
+					mw(next).ServeHTTP(recorder, req)
 					if !assert.False(t, nextCalled) {
 						return
 					}

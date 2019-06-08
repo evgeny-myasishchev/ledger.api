@@ -195,7 +195,7 @@ func (f ToolkitHandlerFunc) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 }
 
 // MiddlewareFunc is a function that can be injected into a request chain
-type MiddlewareFunc func(next http.HandlerFunc) http.HandlerFunc
+type MiddlewareFunc func(next http.Handler) http.Handler
 
 // Router is a layer to abstract underlying http router implementation
 // so we could swap it with relatively low efforts
@@ -226,13 +226,13 @@ type Router interface {
 // CreateRouter returns default router implementation
 func CreateRouter() Router {
 	router := createGojiRouter()
-	router.Use(MiddlewareFunc(func(next http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
+	router.Use(MiddlewareFunc(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			nextCtx := context.WithValue(r.Context(), validatorRequestKey, newStructValidator())
 			nextCtx = context.WithValue(nextCtx, pathParamValueFuncKey, pathParamValueFunc(router.pathParam))
 			nextReq := r.WithContext(nextCtx)
-			next(w, nextReq)
-		}
+			next.ServeHTTP(w, nextReq)
+		})
 	}))
 	return router
 }

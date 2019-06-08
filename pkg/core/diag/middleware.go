@@ -10,6 +10,9 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+// Note: we can not reference router here since it'll create a cyclic imports
+// so MiddlewareFunc type can not be used
+
 type requestIDMiddlewareCfg struct {
 	newUUID func() uuid.UUID
 }
@@ -17,22 +20,22 @@ type requestIDMiddlewareCfg struct {
 type requestIDMiddlewareSetup func(cfg *requestIDMiddlewareCfg)
 
 // NewRequestIDMiddleware - creates a middleware that will maintain the requestId header
-func NewRequestIDMiddleware(setup ...requestIDMiddlewareSetup) func(next http.HandlerFunc) http.HandlerFunc {
+func NewRequestIDMiddleware(setup ...requestIDMiddlewareSetup) func(next http.Handler) http.Handler {
 	cfg := requestIDMiddlewareCfg{newUUID: uuid.NewV4}
 	for _, setupFn := range setup {
 		setupFn(&cfg)
 	}
 
-	return func(next http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, req *http.Request) {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			requestID := req.Header.Get("x-request-id")
 			if requestID == "" {
 				requestID = cfg.newUUID().String()
 			}
 			nextCtx := ContextWithRequestID(req.Context(), requestID)
 			w.Header().Add("x-request-id", requestID)
-			next(w, req.WithContext(nextCtx))
-		}
+			next.ServeHTTP(w, req.WithContext(nextCtx))
+		})
 	}
 }
 
@@ -75,7 +78,7 @@ func (cfg *LogRequestsMiddlewareCfg) IgnorePath(path string) {
 }
 
 // NewLogRequestsMiddleware - log request start/end
-func NewLogRequestsMiddleware(setup ...func(*LogRequestsMiddlewareCfg)) func(next http.HandlerFunc) http.HandlerFunc {
+func NewLogRequestsMiddleware(setup ...func(*LogRequestsMiddlewareCfg)) func(next http.Handler) http.Handler {
 	// TODO: Blacklist headers
 	// TODO: Headers and query values should not be arrays
 
@@ -100,13 +103,13 @@ func NewLogRequestsMiddleware(setup ...func(*LogRequestsMiddlewareCfg)) func(nex
 		cfg.now = time.Now
 	}
 
-	return func(next http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, req *http.Request) {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			method := req.Method
 			path := req.URL.Path
 
 			if _, ok := cfg.ignorePaths[path]; ok {
-				next(w, req)
+				next.ServeHTTP(w, req)
 				return
 			}
 
@@ -137,7 +140,7 @@ func NewLogRequestsMiddleware(setup ...func(*LogRequestsMiddlewareCfg)) func(nex
 				target: w,
 			}
 			reqStartedAt := cfg.now()
-			next(&wrappedWriter, req)
+			next.ServeHTTP(&wrappedWriter, req)
 			reqDuration := cfg.now().Sub(reqStartedAt)
 
 			responseStatus := wrappedWriter.getStatus()
@@ -150,6 +153,6 @@ func NewLogRequestsMiddleware(setup ...func(*LogRequestsMiddlewareCfg)) func(nex
 					"memoryUsageMb": cfg.runtimeMemMb(),
 				}).
 				Info(req.Context(), "END REQ: %v - %v", responseStatus, path)
-		}
+		})
 	}
 }

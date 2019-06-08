@@ -120,7 +120,7 @@ func TestRequestIDMiddleware(t *testing.T) {
 		tt := ttFn()
 		t.Run(tt.name, func(t *testing.T) {
 			nextCalled := false
-			next := func(w http.ResponseWriter, req *http.Request) {
+			next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				nextCalled = true
 				requestID := RequestIDValue(req.Context())
 				if tt.wantNotEmpty {
@@ -128,9 +128,9 @@ func TestRequestIDMiddleware(t *testing.T) {
 				} else {
 					assert.Equal(t, tt.want, requestID)
 				}
-			}
+			})
 			mw := NewRequestIDMiddleware(tt.args.setup...)
-			mw(next)(tt.args.w, tt.args.req)
+			mw(next).ServeHTTP(tt.args.w, tt.args.req)
 			assert.True(t, nextCalled, "Next should have been called")
 		})
 	}
@@ -183,13 +183,13 @@ func TestLogRequestsMiddleware(t *testing.T) {
 				code := 100 + rand.Intn(500)
 				w := httptest.NewRecorder()
 				nextCalled := false
-				next := func(w http.ResponseWriter, req *http.Request) {
+				next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 					nextCalled = true
 					assert.Implements(t, (*http.ResponseWriter)(nil), w)
 					assert.IsType(t, (*http.Request)(nil), req)
 					w.WriteHeader(code)
-				}
-				mw(next)(w, req)
+				})
+				mw(next).ServeHTTP(w, req)
 				assert.True(t, nextCalled, "Next should have been called")
 
 				wantLogs := []wantLogData{
@@ -237,12 +237,12 @@ func TestLogRequestsMiddleware(t *testing.T) {
 
 				w := httptest.NewRecorder()
 				nextCalled := false
-				next := func(w http.ResponseWriter, req *http.Request) {
+				next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 					nextCalled = true
 					assert.Implements(t, (*http.ResponseWriter)(nil), w)
 					assert.IsType(t, (*http.Request)(nil), req)
-				}
-				mw(next)(w, req)
+				})
+				mw(next).ServeHTTP(w, req)
 				assert.True(t, nextCalled, "Next should have been called")
 				if !assert.Len(t, l.gotLogs, 2) {
 					assert.FailNow(t, "Can not continue")
@@ -267,12 +267,12 @@ func TestLogRequestsMiddleware(t *testing.T) {
 
 				w := httptest.NewRecorder()
 				nextCalled := false
-				next := func(w http.ResponseWriter, req *http.Request) {
+				next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 					nextCalled = true
 					assert.Implements(t, (*http.ResponseWriter)(nil), w)
 					assert.IsType(t, (*http.Request)(nil), req)
-				}
-				mw(next)(w, req)
+				})
+				mw(next).ServeHTTP(w, req)
 				assert.True(t, nextCalled, "Next should have been called")
 				assert.Len(t, l.gotLogs, 0)
 			},
@@ -289,12 +289,12 @@ func TestLogRequestsMiddleware(t *testing.T) {
 
 				w := httptest.NewRecorder()
 				nextCalled := false
-				next := func(w http.ResponseWriter, req *http.Request) {
+				next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 					nextCalled = true
 					assert.Implements(t, (*http.ResponseWriter)(nil), w)
 					assert.IsType(t, (*http.Request)(nil), req)
-				}
-				mw(next)(w, req)
+				})
+				mw(next).ServeHTTP(w, req)
 				assert.True(t, nextCalled, "Next should have been called")
 				assert.Len(t, l.gotLogs, 0)
 			},
@@ -315,10 +315,10 @@ func TestLogRequestsMiddleware(t *testing.T) {
 
 				w := httptest.NewRecorder()
 				nextCalled := false
-				next := func(w http.ResponseWriter, req *http.Request) {
+				next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 					nextCalled = true
-				}
-				mw(next)(w, req)
+				})
+				mw(next).ServeHTTP(w, req)
 				assert.True(t, nextCalled, "Next should have been called")
 				assert.Len(t, l.gotLogs, 3)
 				startLog := l.gotLogs[1]

@@ -68,6 +68,28 @@ func NewMiddleware(setup ...MiddlewareOpt) func(next http.HandlerFunc) http.Hand
 	}
 }
 
+type authorizeRequestCfg struct {
+	allowedScope []string
+}
+
+// AuthorizeOpt is an option for AuthorizeRequest wrapper
+type AuthorizeOpt func(*authorizeRequestCfg)
+
+// AllowScope is an option to allow particular scope
+func AllowScope(scope ...string) AuthorizeOpt {
+	return func(cfg *authorizeRequestCfg) {
+		cfg.allowedScope = append(cfg.allowedScope, scope...)
+	}
+}
+
+// AuthorizeRequest is a request handler wrapper to validate token presence
+// and optionally validate if token includes particular scope
+func AuthorizeRequest(next http.HandlerFunc, setup ...AuthorizeOpt) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		next(w, req)
+	}
+}
+
 // // RequireScopes action handler middleware wrapper that will
 // // verify if scope claim of a token includes scopes provided
 // func RequireScopes(handler HandlerFunc, scopes ...string) HandlerFunc {

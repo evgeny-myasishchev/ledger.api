@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -220,6 +221,23 @@ func TestParamsBinder(t *testing.T) {
 		tt := ttFn()
 		t.Run(tt.name, func(t *testing.T) {
 			tt.run(t)
+		})
+	}
+}
+
+func TestToolkitHandlerFunc_HandlerFunc(t *testing.T) {
+	tests := []struct {
+		name string
+		f    ToolkitHandlerFunc
+		want http.HandlerFunc
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.f.HandlerFunc(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ToolkitHandlerFunc.HandlerFunc() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

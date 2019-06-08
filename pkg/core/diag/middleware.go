@@ -76,6 +76,9 @@ func (cfg *LogRequestsMiddlewareCfg) IgnorePath(path string) {
 
 // NewLogRequestsMiddleware - log request start/end
 func NewLogRequestsMiddleware(setup ...func(*LogRequestsMiddlewareCfg)) func(next http.HandlerFunc) http.HandlerFunc {
+	// TODO: Blacklist headers
+	// TODO: Headers and query values should not be arrays
+
 	cfg := LogRequestsMiddlewareCfg{
 		ignorePaths: map[string]bool{},
 	}

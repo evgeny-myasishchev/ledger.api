@@ -1,7 +1,6 @@
 package router
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,7 +16,7 @@ import (
 	ldTesting "ledger.api/pkg/internal/testing"
 )
 
-func TestGojiRouterHandleToolkit(t *testing.T) {
+func TestHandlerToolkit(t *testing.T) {
 	newReq := func(method string, pattern string) *http.Request {
 		req, err := http.NewRequest("GET", pattern, nil)
 		if err != nil {
@@ -26,7 +25,7 @@ func TestGojiRouterHandleToolkit(t *testing.T) {
 		return req
 	}
 
-	router := createGojiRouter()
+	router := CreateRouter()
 
 	jsonPayload := map[string]interface{}{
 		"key1": faker.Word(),
@@ -39,15 +38,10 @@ func TestGojiRouterHandleToolkit(t *testing.T) {
 	router.Handle("GET", "/v1/route/:param",
 		ToolkitHandlerFunc(func(w http.ResponseWriter, req *http.Request, h HandlerToolkit) error {
 			assert.NotNil(t, h, "handler toolkit should have been provided")
-			gojiTk := h.(*gojiHandlerToolkit)
-			assert.NotNil(t, gojiTk.validator)
-			assert.IsType(t, newStructValidator(), gojiTk.validator)
-			assert.Equal(t, w, gojiTk.responseWriter)
 
 			paramsBinder := h.BindParams()
 			assert.NotNil(t, paramsBinder)
 			assert.Equal(t, req, paramsBinder.req)
-			assert.Equal(t, gojiTk.validator, paramsBinder.validator)
 			assert.NotNil(t, paramsBinder.pathParamValue)
 			assert.Equal(t, paramValue, paramsBinder.pathParamValue(req, "param"))
 
@@ -69,41 +63,7 @@ func TestGojiRouterHandleToolkit(t *testing.T) {
 	assert.Equal(t, jsonPayload, actualPayload)
 }
 
-func TestGojiRouterHandleErrorHandling(t *testing.T) {
-	newReq := func(method string, pattern string) *http.Request {
-		req, err := http.NewRequest("GET", pattern, nil)
-		if err != nil {
-			panic(err)
-		}
-		return req
-	}
-
-	router := createGojiRouter()
-
-	errorMessage := faker.Sentence()
-	router.Handle("GET", "/v1/fail-generic",
-		ToolkitHandlerFunc(func(w http.ResponseWriter, req *http.Request, h HandlerToolkit) error {
-			return errors.New(errorMessage)
-		}))
-
-	req := newReq("GET", "/v1/fail-generic")
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-
-	assert.Equal(t, w.Code, 500, "Should respond with 500 for generic errors")
-	assert.Equal(t, w.Header().Get("content-type"), "application/json", "Should respond with json")
-
-	actualResponse := HTTPError{}
-	err := json.Unmarshal(w.Body.Bytes(), &actualResponse)
-	assert.NoError(t, err, "Failed to unmarshal error response")
-	assert.Equal(t, HTTPError{
-		StatusCode: 500,
-		Status:     http.StatusText(http.StatusInternalServerError),
-		Message:    errorMessage,
-	}, actualResponse)
-}
-
-func Test_gojiHandlerToolkit_BindPayload(t *testing.T) {
+func Test_HandlerToolkit_BindPayload(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	type fields struct {
 		body io.Reader
@@ -205,7 +165,7 @@ func Test_gojiHandlerToolkit_BindPayload(t *testing.T) {
 	for _, ttFn := range tests {
 		tt := ttFn()
 		t.Run(tt.name, func(t *testing.T) {
-			h := &gojiHandlerToolkit{
+			h := &handlerToolkit{
 				request:   httptest.NewRequest("POST", "/", tt.fields.body),
 				validator: newStructValidator(),
 			}
@@ -214,7 +174,7 @@ func Test_gojiHandlerToolkit_BindPayload(t *testing.T) {
 	}
 }
 
-func Test_gojiHandlerToolkit_WriteJSON(t *testing.T) {
+func Test_HandlerToolkit_WriteJSON(t *testing.T) {
 	type args struct {
 		payload    interface{}
 		decorators []ResponseDecorator
@@ -300,7 +260,7 @@ func Test_gojiHandlerToolkit_WriteJSON(t *testing.T) {
 		tt := ttFn()
 		t.Run(tt.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			h := HandlerToolkit(&gojiHandlerToolkit{
+			h := HandlerToolkit(&handlerToolkit{
 				request:        httptest.NewRequest("GET", "/", nil),
 				responseWriter: recorder,
 			})
@@ -310,7 +270,7 @@ func Test_gojiHandlerToolkit_WriteJSON(t *testing.T) {
 	}
 }
 
-func Test_gojiHandlerToolkit_Decorator(t *testing.T) {
+func Test_HandlerToolkit_Decorator(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 
 	type args struct {
@@ -344,7 +304,7 @@ func Test_gojiHandlerToolkit_Decorator(t *testing.T) {
 		tt := ttFn()
 		t.Run(tt.name, func(t *testing.T) {
 			recorder := httptest.NewRecorder()
-			h := HandlerToolkit(&gojiHandlerToolkit{
+			h := HandlerToolkit(&handlerToolkit{
 				request:        httptest.NewRequest("GET", "/", nil),
 				responseWriter: recorder,
 			})

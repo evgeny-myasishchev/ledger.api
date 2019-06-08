@@ -228,7 +228,8 @@ func TestParamsBinder(t *testing.T) {
 
 func TestToolkitHandlerFunc_ServeHTTP(t *testing.T) {
 	type args struct {
-		validator *structValidator
+		validator      *structValidator
+		pathParamValue pathParamValueFunc
 	}
 	type testCase struct {
 		name string
@@ -238,9 +239,13 @@ func TestToolkitHandlerFunc_ServeHTTP(t *testing.T) {
 	tests := []func() testCase{
 		func() testCase {
 			validator := newStructValidator()
+			fakePathParamVal := faker.Word()
+			pathParamValue := pathParamValueFunc(func(req *http.Request, name string) string {
+				return fakePathParamVal
+			})
 			return testCase{
 				name: "invoke handler with toolkit",
-				args: args{validator: validator},
+				args: args{validator: validator, pathParamValue: pathParamValue},
 				run: func(t *testing.T, req *http.Request, recorder *httptest.ResponseRecorder) {
 					fnCalled := false
 					fn := ToolkitHandlerFunc(func(w http.ResponseWriter, r *http.Request, h HandlerToolkit) error {
@@ -248,7 +253,7 @@ func TestToolkitHandlerFunc_ServeHTTP(t *testing.T) {
 						assert.Equal(t, req, r)
 						assert.Equal(t, w, recorder)
 
-						toolkit := h.(*gojiHandlerToolkit)
+						toolkit := h.(*handlerToolkit)
 						if !assert.NotNil(t, toolkit) {
 							return nil
 						}
@@ -256,6 +261,10 @@ func TestToolkitHandlerFunc_ServeHTTP(t *testing.T) {
 						assert.Equal(t, r, toolkit.request)
 						assert.Equal(t, w, toolkit.responseWriter)
 						assert.Equal(t, validator, toolkit.validator)
+						if !assert.NotNil(t, toolkit.pathParamValue) {
+							return nil
+						}
+						assert.Equal(t, fakePathParamVal, toolkit.pathParamValue(r, "fake"))
 
 						return nil
 					})
@@ -295,6 +304,7 @@ func TestToolkitHandlerFunc_ServeHTTP(t *testing.T) {
 			recorder := httptest.NewRecorder()
 
 			nextContext := context.WithValue(req.Context(), validatorRequestKey, tt.args.validator)
+			nextContext = context.WithValue(nextContext, pathParamValueFuncKey, tt.args.pathParamValue)
 			req = req.WithContext(nextContext)
 
 			tt.run(t, req, recorder)

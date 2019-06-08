@@ -17,7 +17,8 @@ var logger = diag.CreateLogger()
 type contextKey string
 
 const (
-	validatorRequestKey contextKey = "validator"
+	validatorRequestKey   contextKey = "validator"
+	pathParamValueFuncKey contextKey = "path-param-value-func"
 )
 
 // RequestParamType represents type of a request parameter
@@ -27,7 +28,7 @@ const (
 	// PathParam is a request path parameter type
 	PathParam RequestParamType = "path"
 
-	// QueryParam is a request quyer parameter type
+	// QueryParam is a request query parameter type
 	QueryParam RequestParamType = "query"
 )
 
@@ -179,11 +180,11 @@ type ToolkitHandlerFunc func(w http.ResponseWriter, req *http.Request, h Handler
 // ServeHTTP is an implementation of http.Handler. This allows ToolkitHandlerFunc to be used
 // in place of the http.Handler
 func (f ToolkitHandlerFunc) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	// TODO: make gojiHandlerToolkit just handlerToolkit
-	toolkit := gojiHandlerToolkit{
+	toolkit := handlerToolkit{
 		request:        req,
 		responseWriter: w,
 		validator:      req.Context().Value(validatorRequestKey).(*structValidator),
+		pathParamValue: req.Context().Value(pathParamValueFuncKey).(pathParamValueFunc),
 	}
 	err := f(w, req, &toolkit)
 	if err != nil {
@@ -205,12 +206,35 @@ type Router interface {
 	// TODO: Build no-panic middleware (e.g respond with consistent 500 error)
 	Use(mw MiddlewareFunc)
 
+	/*
+		pathParam returns the bound parameter with the given name.
+		Suppose we have a route pattern:
+
+			/v1/users/:id
+
+		and the URL Path:
+
+			/v1/users/100
+
+		in this case pathParam will return 100
+	*/
+	pathParam(r *http.Request, name string) string
+
 	ServeHTTP(http.ResponseWriter, *http.Request)
 }
 
 // CreateRouter returns default router implementation
 func CreateRouter() Router {
-	return createGojiRouter()
+	router := createGojiRouter()
+	router.Use(MiddlewareFunc(func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			nextCtx := context.WithValue(r.Context(), validatorRequestKey, newStructValidator())
+			nextCtx = context.WithValue(nextCtx, pathParamValueFuncKey, pathParamValueFunc(router.pathParam))
+			nextReq := r.WithContext(nextCtx)
+			next(w, nextReq)
+		}
+	}))
+	return router
 }
 
 // StartServer start the server with setup router function

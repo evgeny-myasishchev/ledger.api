@@ -36,24 +36,25 @@ func TestGojiRouterHandleToolkit(t *testing.T) {
 
 	handlerCalled := false
 	paramValue := faker.Word()
-	router.Handle("GET", "/v1/route/:param", func(w http.ResponseWriter, req *http.Request, h HandlerToolkit) error {
-		assert.NotNil(t, h, "handler toolkit should have been provided")
-		gojiTk := h.(*gojiHandlerToolkit)
-		assert.NotNil(t, gojiTk.validator)
-		assert.Equal(t, (router.(*gojiRouter)).validator, gojiTk.validator)
-		assert.Equal(t, w, gojiTk.responseWriter)
+	router.Handle("GET", "/v1/route/:param",
+		ToolkitHandlerFunc(func(w http.ResponseWriter, req *http.Request, h HandlerToolkit) error {
+			assert.NotNil(t, h, "handler toolkit should have been provided")
+			gojiTk := h.(*gojiHandlerToolkit)
+			assert.NotNil(t, gojiTk.validator)
+			assert.IsType(t, newStructValidator(), gojiTk.validator)
+			assert.Equal(t, w, gojiTk.responseWriter)
 
-		paramsBinder := h.BindParams()
-		assert.NotNil(t, paramsBinder)
-		assert.Equal(t, req, paramsBinder.req)
-		assert.Equal(t, gojiTk.validator, paramsBinder.validator)
-		assert.NotNil(t, paramsBinder.pathParamValue)
-		assert.Equal(t, paramValue, paramsBinder.pathParamValue(req, "param"))
+			paramsBinder := h.BindParams()
+			assert.NotNil(t, paramsBinder)
+			assert.Equal(t, req, paramsBinder.req)
+			assert.Equal(t, gojiTk.validator, paramsBinder.validator)
+			assert.NotNil(t, paramsBinder.pathParamValue)
+			assert.Equal(t, paramValue, paramsBinder.pathParamValue(req, "param"))
 
-		handlerCalled = true
+			handlerCalled = true
 
-		return h.WriteJSON(jsonPayload)
-	})
+			return h.WriteJSON(jsonPayload)
+		}))
 
 	req := newReq("GET", fmt.Sprintf("/v1/route/%v", paramValue))
 	w := httptest.NewRecorder()
@@ -80,9 +81,10 @@ func TestGojiRouterHandleErrorHandling(t *testing.T) {
 	router := createGojiRouter()
 
 	errorMessage := faker.Sentence()
-	router.Handle("GET", "/v1/fail-generic", func(w http.ResponseWriter, req *http.Request, h HandlerToolkit) error {
-		return errors.New(errorMessage)
-	})
+	router.Handle("GET", "/v1/fail-generic",
+		ToolkitHandlerFunc(func(w http.ResponseWriter, req *http.Request, h HandlerToolkit) error {
+			return errors.New(errorMessage)
+		}))
 
 	req := newReq("GET", "/v1/fail-generic")
 	w := httptest.NewRecorder()

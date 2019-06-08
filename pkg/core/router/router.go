@@ -196,9 +196,10 @@ func (f ToolkitHandlerFunc) ServeHTTP(w http.ResponseWriter, req *http.Request) 
 // MiddlewareFunc is a function that can be injected into a request chain
 type MiddlewareFunc func(next http.HandlerFunc) http.HandlerFunc
 
-// Router is a layer to abstract away particular http lib
+// Router is a layer to abstract underlying http router implementation
+// so we could swap it with relatively low efforts
 type Router interface {
-	Handle(method string, pattern string, handler ToolkitHandlerFunc)
+	Handle(method string, pattern string, handler http.Handler)
 
 	// TODO: Build 404 middleware
 	// TODO: Build no-panic middleware (e.g respond with consistent 500 error)

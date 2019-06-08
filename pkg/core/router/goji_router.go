@@ -1,6 +1,7 @@
 package router
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -68,16 +69,8 @@ type gojiRouter struct {
 	validator *structValidator
 }
 
-func (g *gojiRouter) Handle(method string, pattern string, handler ToolkitHandlerFunc) {
-	g.mux.HandleFunc(pat.NewWithMethods(pattern, method), func(w http.ResponseWriter, r *http.Request) {
-		toolkit := gojiHandlerToolkit{request: r, responseWriter: w, validator: g.validator}
-		err := handler(w, r, &toolkit)
-		if err != nil {
-			logger.WithError(err).Error(r.Context(), "Failed to process request")
-			errorResponse := newHTTPErrorFromError(err)
-			errorResponse.Send(w)
-		}
-	})
+func (g *gojiRouter) Handle(method string, pattern string, handler http.Handler) {
+	g.mux.Handle(pat.NewWithMethods(pattern, method), handler)
 }
 
 func (g *gojiRouter) Use(mw MiddlewareFunc) {
@@ -93,5 +86,12 @@ func (g *gojiRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func createGojiRouter() Router {
 	mux := goji.NewMux()
 	router := gojiRouter{mux: mux, validator: newStructValidator()}
+	router.Use(MiddlewareFunc(func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			nextCtx := context.WithValue(r.Context(), validatorRequestKey, newStructValidator())
+			nextReq := r.WithContext(nextCtx)
+			next(w, nextReq)
+		}
+	}))
 	return &router
 }

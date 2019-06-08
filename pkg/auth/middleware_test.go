@@ -2,22 +2,18 @@ package auth
 
 import (
 	"errors"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	tst "ledger.api/pkg/internal/testing"
-
 	"github.com/auth0-community/go-auth0"
-
 	"github.com/bxcodec/faker/v3"
-
 	"github.com/stretchr/testify/assert"
-
 	"github.com/stretchr/testify/mock"
 	"gopkg.in/square/go-jose.v2/jwt"
-
 	"ledger.api/pkg/core/router"
+	tst "ledger.api/pkg/internal/testing"
 )
 
 type mockValidator struct {
@@ -126,17 +122,11 @@ func TestMiddleware(t *testing.T) {
 					}
 					v.AssertExpectations(t)
 
-					assert.Equal(t, http.StatusUnauthorized, recorder.Code)
-
-					var httpError router.HTTPError
-					if !tst.JSONUnmarshalReader(t, recorder.Body, &httpError) {
-						return
-					}
-					assert.Equal(t, router.HTTPError{
+					tst.AssertHTTPErrorResponse(t, router.HTTPError{
 						StatusCode: http.StatusUnauthorized,
 						Status:     http.StatusText(http.StatusUnauthorized),
 						Message:    "Token validation failed",
-					}, httpError)
+					}, recorder)
 				},
 			}
 		},
@@ -165,17 +155,11 @@ func TestMiddleware(t *testing.T) {
 					}
 					v.AssertExpectations(t)
 
-					assert.Equal(t, http.StatusUnauthorized, recorder.Code)
-
-					var httpError router.HTTPError
-					if !tst.JSONUnmarshalReader(t, recorder.Body, &httpError) {
-						return
-					}
-					assert.Equal(t, router.HTTPError{
+					tst.AssertHTTPErrorResponse(t, router.HTTPError{
 						StatusCode: http.StatusUnauthorized,
 						Status:     http.StatusText(http.StatusUnauthorized),
 						Message:    "Bad token",
-					}, httpError)
+					}, recorder)
 				},
 			}
 		},
@@ -185,6 +169,73 @@ func TestMiddleware(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mw := NewMiddleware(tt.args.setup...)
 			tt.run(t, mw)
+		})
+	}
+}
+
+func TestAuthorizeRequest(t *testing.T) {
+	type args struct {
+		claims *LedgerClaims
+	}
+	type testCase struct {
+		name string
+		args args
+		run  func(t *testing.T, req *http.Request, recorder *httptest.ResponseRecorder)
+	}
+	tests := []func() testCase{
+		func() testCase {
+			return testCase{
+				name: "fails if no claims",
+				run: func(t *testing.T, req *http.Request, recorder *httptest.ResponseRecorder) {
+					nextCalled := false
+					next := func(w http.ResponseWriter, req *http.Request) {
+						nextCalled = true
+					}
+					AuthorizeRequest(next)(recorder, req)
+					if !assert.False(t, nextCalled) {
+						return
+					}
+					tst.AssertHTTPErrorResponse(t, router.HTTPError{
+						StatusCode: http.StatusForbidden,
+						Status:     http.StatusText(http.StatusForbidden),
+						Message:    "Access token not found",
+					}, recorder)
+				},
+			}
+		},
+		func() testCase {
+			return testCase{
+				name: "pass if no scope to authorize",
+				args: args{claims: &LedgerClaims{}},
+				run: func(t *testing.T, req *http.Request, recorder *httptest.ResponseRecorder) {
+					nextCalled := false
+					nextStatus := rand.Intn(400)
+					next := func(w http.ResponseWriter, req *http.Request) {
+						nextCalled = true
+						w.WriteHeader(nextStatus)
+					}
+					AuthorizeRequest(next)(recorder, req)
+					if !assert.True(t, nextCalled) {
+						return
+					}
+					assert.Equal(t, nextStatus, recorder.Code)
+				},
+			}
+		},
+	}
+
+	// TODO: pass if allowed scope present
+	// TODO: fail if missing scope
+	for _, tt := range tests {
+		tt := tt()
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/some-path", nil)
+			recorder := httptest.NewRecorder()
+			if tt.args.claims != nil {
+				nextContext := ContextWithClaims(req.Context(), tt.args.claims)
+				req = req.WithContext(nextContext)
+			}
+			tt.run(t, req, recorder)
 		})
 	}
 }

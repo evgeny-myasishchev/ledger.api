@@ -123,11 +123,11 @@ func TestMiddleware(t *testing.T) {
 					}
 					v.AssertExpectations(t)
 
-					tst.AssertHTTPErrorResponse(t, router.HTTPError{
-						StatusCode: http.StatusUnauthorized,
-						Status:     http.StatusText(http.StatusUnauthorized),
-						Message:    "Token validation failed",
-					}, recorder)
+					tst.AssertHTTPErrorResponse(t, tst.NewHTTPErrorPayload(
+						http.StatusUnauthorized,
+						http.StatusText(http.StatusUnauthorized),
+						"Token validation failed",
+					), recorder)
 				},
 			}
 		},
@@ -156,11 +156,11 @@ func TestMiddleware(t *testing.T) {
 					}
 					v.AssertExpectations(t)
 
-					tst.AssertHTTPErrorResponse(t, router.HTTPError{
-						StatusCode: http.StatusUnauthorized,
-						Status:     http.StatusText(http.StatusUnauthorized),
-						Message:    "Bad token",
-					}, recorder)
+					tst.AssertHTTPErrorResponse(t, tst.NewHTTPErrorPayload(
+						http.StatusUnauthorized,
+						http.StatusText(http.StatusUnauthorized),
+						"Bad token",
+					), recorder)
 				},
 			}
 		},
@@ -196,11 +196,11 @@ func TestAuthorizeRequest(t *testing.T) {
 					if !assert.False(t, nextCalled) {
 						return
 					}
-					tst.AssertHTTPErrorResponse(t, router.HTTPError{
-						StatusCode: http.StatusForbidden,
-						Status:     http.StatusText(http.StatusForbidden),
-						Message:    "Access token not found",
-					}, recorder)
+					tst.AssertHTTPErrorResponse(t, tst.NewHTTPErrorPayload(
+						http.StatusForbidden,
+						http.StatusText(http.StatusForbidden),
+						"Access token not found",
+					), recorder)
 				},
 			}
 		},
@@ -274,11 +274,11 @@ func TestAuthorizeRequest(t *testing.T) {
 					if !assert.False(t, nextCalled) {
 						return
 					}
-					tst.AssertHTTPErrorResponse(t, router.HTTPError{
-						StatusCode: http.StatusForbidden,
-						Status:     http.StatusText(http.StatusForbidden),
-						Message:    "Missing scope: " + allowedScope,
-					}, recorder)
+					tst.AssertHTTPErrorResponse(t, tst.NewHTTPErrorPayload(
+						http.StatusForbidden,
+						http.StatusText(http.StatusForbidden),
+						"Missing scope: "+allowedScope,
+					), recorder)
 				},
 			}
 		},

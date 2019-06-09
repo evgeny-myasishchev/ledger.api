@@ -338,6 +338,47 @@ func TestLogRequestsMiddleware(t *testing.T) {
 			},
 		},
 		{
+			name: "obfuscate custom headers",
+			testCase: func(t *testing.T) {
+				customHeader1 := "X-Custom1-H" + faker.Word()
+				customValue1 := faker.Word()
+
+				customHeader2 := "X-Custom2-H" + faker.Word()
+				customValue2 := faker.Word()
+
+				req := httptest.NewRequest("GET", "/", nil)
+				req.Header.Add(customHeader1, customValue1)
+				req.Header.Add(customHeader2, customValue2)
+
+				l := mockLogger{gotLogs: []wantLogData{}}
+
+				mw := NewLogRequestsMiddleware(
+					func(cfg *logRequestsMiddlewareCfg) {
+						cfg.logger = &l
+					},
+					ObfuscateHeaders(customHeader1, customHeader2),
+				)
+
+				w := httptest.NewRecorder()
+				nextCalled := false
+				next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					nextCalled = true
+				})
+				mw(next).ServeHTTP(w, req)
+				assert.True(t, nextCalled)
+				assert.Len(t, l.gotLogs, 2)
+				loggedHeaders := l.gotLogs[0].msgData["headers"].(map[string]string)
+				assert.Equal(t,
+					fmt.Sprint("*obfuscated, length=", len(customValue1), "*"),
+					loggedHeaders[customHeader1],
+				)
+				assert.Equal(t,
+					fmt.Sprint("*obfuscated, length=", len(customValue2), "*"),
+					loggedHeaders[customHeader2],
+				)
+			},
+		},
+		{
 			name: "remote address without port",
 			testCase: func(t *testing.T) {
 				req := httptest.NewRequest("GET", "/fake", nil)

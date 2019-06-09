@@ -68,20 +68,28 @@ func (lmw *loggingMiddlewareResponseWrapper) getStatus() int {
 
 // logRequestsMiddlewareCfg represents a config for the requests logging middleware
 type logRequestsMiddlewareCfg struct {
-	ignorePaths  map[string]bool
-	logger       Logger
-	runtimeMemMb func() float64
-	now          func() time.Time
+	ignorePaths      map[string]bool
+	obfuscateHeaders []string
+	logger           Logger
+	runtimeMemMb     func() float64
+	now              func() time.Time
 }
 
 // LogRequestsMiddlewareOpt is a type used to supply various opts
 // for requests logger middleware
 type LogRequestsMiddlewareOpt func(*logRequestsMiddlewareCfg)
 
-// IgnorePath do not log requests for given path
+// IgnorePath option specify paths to skip log requests for
 func IgnorePath(path string) LogRequestsMiddlewareOpt {
 	return func(cfg *logRequestsMiddlewareCfg) {
 		cfg.ignorePaths[path] = true
+	}
+}
+
+// ObfuscateHeaders option provides a list of headers to obfuscate (e.g do not log values)
+func ObfuscateHeaders(headers ...string) LogRequestsMiddlewareOpt {
+	return func(cfg *logRequestsMiddlewareCfg) {
+		cfg.obfuscateHeaders = append(cfg.obfuscateHeaders, headers...)
 	}
 }
 
@@ -103,7 +111,8 @@ func NewLogRequestsMiddleware(opts ...LogRequestsMiddlewareOpt) func(next http.H
 	// TODO: Blacklist headers
 
 	cfg := logRequestsMiddlewareCfg{
-		ignorePaths: map[string]bool{},
+		ignorePaths:      map[string]bool{},
+		obfuscateHeaders: []string{"Authorization"},
 	}
 	cfg.ignorePaths["/v1/healthcheck/ping"] = true
 	for _, opt := range opts {
@@ -148,7 +157,7 @@ func NewLogRequestsMiddleware(opts ...LogRequestsMiddlewareOpt) func(next http.H
 					"url":           req.URL.RequestURI(),
 					"path":          req.URL.Path,
 					"userAgent":     req.UserAgent(),
-					"headers":       flattenAndObfuscate(req.Header, "Authorization"),
+					"headers":       flattenAndObfuscate(req.Header, cfg.obfuscateHeaders...),
 					"query":         flattenAndObfuscate(req.URL.Query()),
 					"remoteAddress": ip,
 					"remotePort":    port,

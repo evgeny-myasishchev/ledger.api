@@ -134,13 +134,13 @@ func TestTransactionsRoutes(t *testing.T) {
 			})
 
 			// TODO: Restore this
-			// Convey("And user is not authorized", func() {
-			// 	req := ldtesting.NewRequest("GET", path, ldtesting.WithScopeClaim("none"))
-			// 	Convey("It should reject with 403", func() {
-			// 		router.ServeHTTP(recorder, req)
-			// 		So(recorder.Code, ShouldEqual, 403)
-			// 	})
-			// })
+			Convey("And user is not authorized", func() {
+				req := ldtesting.NewRequest("GET", path, ldtesting.WithScopeClaim("none"))
+				Convey("It should reject with 403", func() {
+					router.ServeHTTP(recorder, req)
+					So(recorder.Code, ShouldEqual, 403)
+				})
+			})
 		})
 	})
 }

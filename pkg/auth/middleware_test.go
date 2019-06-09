@@ -48,7 +48,7 @@ func TestMiddleware(t *testing.T) {
 			v := &mockValidator{}
 			return testCase{
 				name: "no token",
-				args: args{setup: []MiddlewareOpt{withValidator(v)}},
+				args: args{setup: []MiddlewareOpt{WithValidator(v)}},
 				run: func(t *testing.T, mw router.MiddlewareFunc) {
 					req := httptest.NewRequest("GET", "/some-path", nil)
 					v.On("ValidateRequest", req).Return((*jwt.JSONWebToken)(nil), auth0.ErrTokenNotFound)
@@ -66,7 +66,7 @@ func TestMiddleware(t *testing.T) {
 			v := &mockValidator{}
 			return testCase{
 				name: "valid token",
-				args: args{setup: []MiddlewareOpt{withValidator(v)}},
+				args: args{setup: []MiddlewareOpt{WithValidator(v)}},
 				run: func(t *testing.T, mw router.MiddlewareFunc) {
 
 					req := httptest.NewRequest("GET", "/some-path", nil)
@@ -104,7 +104,7 @@ func TestMiddleware(t *testing.T) {
 			v := &mockValidator{}
 			return testCase{
 				name: "invalid token",
-				args: args{setup: []MiddlewareOpt{withValidator(v)}},
+				args: args{setup: []MiddlewareOpt{WithValidator(v)}},
 				run: func(t *testing.T, mw router.MiddlewareFunc) {
 
 					req := httptest.NewRequest("GET", "/some-path", nil)
@@ -135,7 +135,7 @@ func TestMiddleware(t *testing.T) {
 			v := &mockValidator{}
 			return testCase{
 				name: "invalid token claims",
-				args: args{setup: []MiddlewareOpt{withValidator(v)}},
+				args: args{setup: []MiddlewareOpt{WithValidator(v)}},
 				run: func(t *testing.T, mw router.MiddlewareFunc) {
 
 					req := httptest.NewRequest("GET", "/some-path", nil)

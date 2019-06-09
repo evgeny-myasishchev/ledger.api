@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"ledger.api/pkg/auth"
+
 	"ledger.api/pkg/core/router"
 )
 
@@ -63,11 +65,11 @@ func createSummaryQueryHandler(svc QueryService) router.ToolkitHandlerFunc {
 
 // SetupRoutes will register transactions routes
 func SetupRoutes(appRouter router.Router, svc QueryService) {
-	// TODO: server.RequireScopes(createSummaryQueryHandler(svc), "read:transactions")
 	// TODO: some authorization if user is authorized for a requested ledger
 
 	// from=:from&to=:to&excludeTags=:excludeTagIDs
 	appRouter.Handle("GET",
 		"/v2/ledgers/:ledgerID/transactions/:type/summary",
-		createSummaryQueryHandler(svc))
+		auth.AuthorizeRequest(createSummaryQueryHandler(svc), auth.AllowScope("read:transactions")),
+	)
 }

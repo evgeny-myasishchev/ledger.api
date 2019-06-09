@@ -14,9 +14,7 @@ type RequestValidator interface {
 	Claims(r *http.Request, token *jwt.JSONWebToken, values ...interface{}) error
 }
 
-// CreateAuth0Validator returns validator instance configured to use
-// jwt tokens issued by auth0
-func CreateAuth0Validator(iss string, aud string) RequestValidator {
+func createAuth0Validator(iss string, aud string) RequestValidator {
 	client := auth0.NewJWKClient(auth0.JWKClientOptions{URI: iss + ".well-known/jwks.json"}, nil)
 	configuration := auth0.NewConfiguration(client, []string{aud}, iss, jose.RS256)
 	validator := auth0.NewValidator(configuration, nil)

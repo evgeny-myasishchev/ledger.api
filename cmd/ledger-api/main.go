@@ -3,6 +3,7 @@ package main
 import (
 	"ledger.api/config"
 	"ledger.api/pkg/app"
+	"ledger.api/pkg/auth"
 	"ledger.api/pkg/core/diag"
 	"ledger.api/pkg/core/router"
 	"ledger.api/pkg/ledgers"
@@ -50,6 +51,10 @@ func main() {
 	err := router.StartServer(port, func(r router.Router) {
 		r.Use(diag.NewRequestIDMiddleware())
 		r.Use(diag.NewLogRequestsMiddleware())
+		r.Use(auth.NewMiddleware(auth.WithAuth0Validator(
+			cfg.StringParam(config.Auth0Iss).Value(),
+			cfg.StringParam(config.Auth0Aud).Value(),
+		)))
 
 		app.SetupRoutes(r)
 		ledgers.SetupRoutes(r, ledgersSvc)

@@ -18,9 +18,18 @@ type middlewareCfg struct {
 // MiddlewareOpt is an auth middleware option
 type MiddlewareOpt func(*middlewareCfg)
 
-func withValidator(v RequestValidator) MiddlewareOpt {
+// WithValidator - setup request validator
+func WithValidator(v RequestValidator) MiddlewareOpt {
 	return func(cfg *middlewareCfg) {
 		cfg.validator = v
+	}
+}
+
+// WithAuth0Validator - setup validator instance configured to use
+// jwt tokens issued by auth0
+func WithAuth0Validator(iss string, aud string) MiddlewareOpt {
+	return func(cfg *middlewareCfg) {
+		cfg.validator = createAuth0Validator(iss, aud)
 	}
 }
 

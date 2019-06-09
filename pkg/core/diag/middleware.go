@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"runtime"
+	"strings"
 	"time"
 
 	uuid "github.com/satori/go.uuid"
@@ -77,6 +78,14 @@ func (cfg *LogRequestsMiddlewareCfg) IgnorePath(path string) {
 	cfg.ignorePaths[path] = true
 }
 
+func flattenValues(values map[string][]string) map[string]string {
+	flattened := make(map[string]string, len(values))
+	for key, val := range values {
+		flattened[key] = strings.Join(val, ", ")
+	}
+	return flattened
+}
+
 // NewLogRequestsMiddleware - log request start/end
 func NewLogRequestsMiddleware(setup ...func(*LogRequestsMiddlewareCfg)) func(next http.Handler) http.Handler {
 	// TODO: Blacklist headers
@@ -128,8 +137,8 @@ func NewLogRequestsMiddleware(setup ...func(*LogRequestsMiddlewareCfg)) func(nex
 					"url":           req.URL.RequestURI(),
 					"path":          req.URL.Path,
 					"userAgent":     req.UserAgent(),
-					"headers":       req.Header,
-					"query":         req.URL.Query(),
+					"headers":       flattenValues(req.Header),
+					"query":         flattenValues(req.URL.Query()),
 					"remoteAddress": ip,
 					"remotePort":    port,
 					"memoryUsageMb": cfg.runtimeMemMb(),
@@ -148,7 +157,7 @@ func NewLogRequestsMiddleware(setup ...func(*LogRequestsMiddlewareCfg)) func(nex
 			cfg.logger.
 				WithData(MsgData{
 					"statusCode":    responseStatus,
-					"headers":       w.Header(),
+					"headers":       flattenValues(w.Header()),
 					"duration":      reqDuration.Seconds(),
 					"memoryUsageMb": cfg.runtimeMemMb(),
 				}).

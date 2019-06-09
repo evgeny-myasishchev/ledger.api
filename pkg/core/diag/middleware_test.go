@@ -148,11 +148,16 @@ func TestLogRequestsMiddleware(t *testing.T) {
 			testCase: func(t *testing.T) {
 				fakeUserAgent := faker.Word()
 				fakeURL := url.URL{
-					Path:     fmt.Sprintf("/path/%v", faker.Word()),
-					RawQuery: fmt.Sprintf("key1=%v&key2=%v", faker.Word(), faker.Word()),
+					Path: fmt.Sprintf("/path/%v", faker.Word()),
+					RawQuery: fmt.Sprintf("key1=%v&key2=%v&key3=%v&key3=%v",
+						faker.Word(), faker.Word(),
+						faker.Word(), faker.Word(),
+					),
 				}
 				req := httptest.NewRequest("GET", fakeURL.RequestURI(), nil)
 				req.Header.Set("User-Agent", fakeUserAgent)
+				req.Header.Add("X-Multi-Values", faker.Word())
+				req.Header.Add("X-Multi-Values", faker.Word())
 				remoteIP := faker.IPv4()
 				remotePort := strconv.FormatInt(rand.Int63n(255), 10)
 				req.RemoteAddr = fmt.Sprintf("%v:%v", remoteIP, remotePort)
@@ -187,6 +192,8 @@ func TestLogRequestsMiddleware(t *testing.T) {
 					nextCalled = true
 					assert.Implements(t, (*http.ResponseWriter)(nil), w)
 					assert.IsType(t, (*http.Request)(nil), req)
+					w.Header().Add("X-Multi-Values", faker.Word())
+					w.Header().Add("X-Multi-Values", faker.Word())
 					w.WriteHeader(code)
 				})
 				mw(next).ServeHTTP(w, req)
@@ -201,10 +208,10 @@ func TestLogRequestsMiddleware(t *testing.T) {
 							"url":       fakeURL.RequestURI(),
 							"path":      fakeURL.Path,
 							"userAgent": req.UserAgent(),
-							"query":     req.URL.Query(),
+							"query":     flattenValues(req.URL.Query()),
 
 							// TODO: Obfuscate
-							"headers": req.Header,
+							"headers": flattenValues(req.Header),
 
 							"remoteAddress": remoteIP,
 							"remotePort":    remotePort,
@@ -216,7 +223,7 @@ func TestLogRequestsMiddleware(t *testing.T) {
 						msg: fmt.Sprintf("END REQ: %v - %v", code, fakeURL.Path),
 						msgData: MsgData{
 							"statusCode":    code,
-							"headers":       w.Header(),
+							"headers":       flattenValues(w.Header()),
 							"duration":      duration.Seconds(),
 							"memoryUsageMb": fakeMemoryStats,
 						},
@@ -329,5 +336,65 @@ func TestLogRequestsMiddleware(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, tt.testCase)
+	}
+}
+
+func Test_flattenValues(t *testing.T) {
+	type args struct {
+		values map[string][]string
+	}
+	type testCase struct {
+		name string
+		args args
+		want map[string]string
+	}
+	tests := []func() testCase{
+		func() testCase {
+			key1 := "key1-" + faker.Word()
+			val1 := "val1-" + faker.Word()
+			key2 := "key2-" + faker.Word()
+			val2 := "val2-" + faker.Word()
+
+			values := map[string][]string{
+				key1: []string{val1},
+				key2: []string{val2},
+			}
+			return testCase{
+				name: "single value",
+				args: args{values: values},
+				want: map[string]string{
+					key1: val1,
+					key2: val2,
+				},
+			}
+		},
+		func() testCase {
+			key1 := "key1-" + faker.Word()
+			val11 := "val11-" + faker.Word()
+			val12 := "val12-" + faker.Word()
+			key2 := "key2-" + faker.Word()
+			val21 := "val21-" + faker.Word()
+			val22 := "val22" + faker.Word()
+
+			values := map[string][]string{
+				key1: []string{val11, val12},
+				key2: []string{val21, val22},
+			}
+			return testCase{
+				name: "multiple value",
+				args: args{values: values},
+				want: map[string]string{
+					key1: val11 + ", " + val12,
+					key2: val21 + ", " + val22,
+				},
+			}
+		},
+	}
+	for _, tt := range tests {
+		tt := tt()
+		t.Run(tt.name, func(t *testing.T) {
+			got := flattenValues((tt.args.values))
+			assert.Equal(t, tt.want, got)
+		})
 	}
 }

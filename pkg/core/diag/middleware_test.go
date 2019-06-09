@@ -208,10 +208,10 @@ func TestLogRequestsMiddleware(t *testing.T) {
 							"url":       fakeURL.RequestURI(),
 							"path":      fakeURL.Path,
 							"userAgent": req.UserAgent(),
-							"query":     flattenValues(req.URL.Query()),
+							"query":     flattenAndObfuscate(req.URL.Query()),
 
 							// TODO: Obfuscate
-							"headers": flattenValues(req.Header),
+							"headers": flattenAndObfuscate(req.Header),
 
 							"remoteAddress": remoteIP,
 							"remotePort":    remotePort,
@@ -223,7 +223,7 @@ func TestLogRequestsMiddleware(t *testing.T) {
 						msg: fmt.Sprintf("END REQ: %v - %v", code, fakeURL.Path),
 						msgData: MsgData{
 							"statusCode":    code,
-							"headers":       flattenValues(w.Header()),
+							"headers":       flattenAndObfuscate(w.Header()),
 							"duration":      duration.Seconds(),
 							"memoryUsageMb": fakeMemoryStats,
 						},
@@ -309,6 +309,35 @@ func TestLogRequestsMiddleware(t *testing.T) {
 			},
 		},
 		{
+			name: "obfuscate default headers",
+			testCase: func(t *testing.T) {
+				req := httptest.NewRequest("GET", "/", nil)
+				l := mockLogger{gotLogs: []wantLogData{}}
+
+				mw := NewLogRequestsMiddleware(
+					func(cfg *logRequestsMiddlewareCfg) {
+						cfg.logger = &l
+					},
+				)
+
+				w := httptest.NewRecorder()
+				nextCalled := false
+				authToken := faker.Word()
+				req.Header.Add("Authorization", authToken)
+				next := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					nextCalled = true
+				})
+				mw(next).ServeHTTP(w, req)
+				assert.True(t, nextCalled)
+				assert.Len(t, l.gotLogs, 2)
+				loggedHeaders := l.gotLogs[0].msgData["headers"].(map[string]string)
+				assert.Equal(t,
+					fmt.Sprint("*obfuscated, length=", len(authToken), "*"),
+					loggedHeaders["Authorization"],
+				)
+			},
+		},
+		{
 			name: "remote address without port",
 			testCase: func(t *testing.T) {
 				req := httptest.NewRequest("GET", "/fake", nil)
@@ -341,9 +370,10 @@ func TestLogRequestsMiddleware(t *testing.T) {
 	}
 }
 
-func Test_flattenValues(t *testing.T) {
+func Test_flattenAndObfuscate(t *testing.T) {
 	type args struct {
-		values map[string][]string
+		values    map[string][]string
+		obfuscate []string
 	}
 	type testCase struct {
 		name string
@@ -391,11 +421,30 @@ func Test_flattenValues(t *testing.T) {
 				},
 			}
 		},
+		func() testCase {
+			key1 := "key1-" + faker.Word()
+			val1 := "val1-" + faker.Word()
+			key2 := "key2-" + faker.Word()
+			val2 := "val2-" + faker.Word()
+
+			values := map[string][]string{
+				key1: []string{val1},
+				key2: []string{val2},
+			}
+			return testCase{
+				name: "obfuscate",
+				args: args{values: values, obfuscate: []string{key1}},
+				want: map[string]string{
+					key1: fmt.Sprint("*obfuscated, length=", len(val1), "*"),
+					key2: val2,
+				},
+			}
+		},
 	}
 	for _, tt := range tests {
 		tt := tt()
 		t.Run(tt.name, func(t *testing.T) {
-			got := flattenValues((tt.args.values))
+			got := flattenAndObfuscate(tt.args.values, tt.args.obfuscate...)
 			assert.Equal(t, tt.want, got)
 		})
 	}

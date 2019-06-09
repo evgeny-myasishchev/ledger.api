@@ -1,6 +1,7 @@
 package diag
 
 import (
+	"fmt"
 	"math"
 	"net"
 	"net/http"
@@ -84,10 +85,15 @@ func IgnorePath(path string) LogRequestsMiddlewareOpt {
 	}
 }
 
-func flattenValues(values map[string][]string) map[string]string {
+func flattenAndObfuscate(values map[string][]string, obfuscateKeys ...string) map[string]string {
 	flattened := make(map[string]string, len(values))
 	for key, val := range values {
 		flattened[key] = strings.Join(val, ", ")
+	}
+	for _, obfuscateKey := range obfuscateKeys {
+		if val, ok := flattened[obfuscateKey]; ok {
+			flattened[obfuscateKey] = fmt.Sprint("*obfuscated, length=", len(val), "*")
+		}
 	}
 	return flattened
 }
@@ -142,8 +148,8 @@ func NewLogRequestsMiddleware(opts ...LogRequestsMiddlewareOpt) func(next http.H
 					"url":           req.URL.RequestURI(),
 					"path":          req.URL.Path,
 					"userAgent":     req.UserAgent(),
-					"headers":       flattenValues(req.Header),
-					"query":         flattenValues(req.URL.Query()),
+					"headers":       flattenAndObfuscate(req.Header, "Authorization"),
+					"query":         flattenAndObfuscate(req.URL.Query()),
 					"remoteAddress": ip,
 					"remotePort":    port,
 					"memoryUsageMb": cfg.runtimeMemMb(),
@@ -162,7 +168,7 @@ func NewLogRequestsMiddleware(opts ...LogRequestsMiddlewareOpt) func(next http.H
 			cfg.logger.
 				WithData(MsgData{
 					"statusCode":    responseStatus,
-					"headers":       flattenValues(w.Header()),
+					"headers":       flattenAndObfuscate(w.Header()),
 					"duration":      reqDuration.Seconds(),
 					"memoryUsageMb": cfg.runtimeMemMb(),
 				}).

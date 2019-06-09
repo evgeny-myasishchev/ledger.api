@@ -173,7 +173,7 @@ func TestLogRequestsMiddleware(t *testing.T) {
 				times := []time.Time{reqStart, reqEnd}
 
 				fakeMemoryStats := rand.Float64()
-				mw := NewLogRequestsMiddleware(func(cfg *LogRequestsMiddlewareCfg) {
+				mw := NewLogRequestsMiddleware(func(cfg *logRequestsMiddlewareCfg) {
 					cfg.logger = &l
 					cfg.runtimeMemMb = func() float64 {
 						return fakeMemoryStats
@@ -238,7 +238,7 @@ func TestLogRequestsMiddleware(t *testing.T) {
 				req := httptest.NewRequest("GET", "/fake", nil)
 				l := mockLogger{gotLogs: []wantLogData{}}
 
-				mw := NewLogRequestsMiddleware(func(cfg *LogRequestsMiddlewareCfg) {
+				mw := NewLogRequestsMiddleware(func(cfg *logRequestsMiddlewareCfg) {
 					cfg.logger = &l
 				})
 
@@ -267,10 +267,12 @@ func TestLogRequestsMiddleware(t *testing.T) {
 				req := httptest.NewRequest("GET", fakePath, nil)
 				l := mockLogger{gotLogs: []wantLogData{}}
 
-				mw := NewLogRequestsMiddleware(func(cfg *LogRequestsMiddlewareCfg) {
-					cfg.logger = &l
-					cfg.IgnorePath(fakePath)
-				})
+				mw := NewLogRequestsMiddleware(
+					func(cfg *logRequestsMiddlewareCfg) {
+						cfg.logger = &l
+					},
+					IgnorePath(fakePath),
+				)
 
 				w := httptest.NewRecorder()
 				nextCalled := false
@@ -290,7 +292,7 @@ func TestLogRequestsMiddleware(t *testing.T) {
 				req := httptest.NewRequest("GET", "/v1/healthcheck/ping", nil)
 				l := mockLogger{gotLogs: []wantLogData{}}
 
-				mw := NewLogRequestsMiddleware(func(cfg *LogRequestsMiddlewareCfg) {
+				mw := NewLogRequestsMiddleware(func(cfg *logRequestsMiddlewareCfg) {
 					cfg.logger = &l
 				})
 
@@ -316,7 +318,7 @@ func TestLogRequestsMiddleware(t *testing.T) {
 				l := mockLogger{
 					gotLogs: []wantLogData{},
 				}
-				mw := NewLogRequestsMiddleware(func(cfg *LogRequestsMiddlewareCfg) {
+				mw := NewLogRequestsMiddleware(func(cfg *logRequestsMiddlewareCfg) {
 					cfg.logger = &l
 				})
 

@@ -65,17 +65,23 @@ func (lmw *loggingMiddlewareResponseWrapper) getStatus() int {
 	return lmw.status
 }
 
-// LogRequestsMiddlewareCfg represents a config for the requests logging middleware
-type LogRequestsMiddlewareCfg struct {
+// logRequestsMiddlewareCfg represents a config for the requests logging middleware
+type logRequestsMiddlewareCfg struct {
 	ignorePaths  map[string]bool
 	logger       Logger
 	runtimeMemMb func() float64
 	now          func() time.Time
 }
 
+// LogRequestsMiddlewareOpt is a type used to supply various opts
+// for requests logger middleware
+type LogRequestsMiddlewareOpt func(*logRequestsMiddlewareCfg)
+
 // IgnorePath do not log requests for given path
-func (cfg *LogRequestsMiddlewareCfg) IgnorePath(path string) {
-	cfg.ignorePaths[path] = true
+func IgnorePath(path string) LogRequestsMiddlewareOpt {
+	return func(cfg *logRequestsMiddlewareCfg) {
+		cfg.ignorePaths[path] = true
+	}
 }
 
 func flattenValues(values map[string][]string) map[string]string {
@@ -87,17 +93,16 @@ func flattenValues(values map[string][]string) map[string]string {
 }
 
 // NewLogRequestsMiddleware - log request start/end
-func NewLogRequestsMiddleware(setup ...func(*LogRequestsMiddlewareCfg)) func(next http.Handler) http.Handler {
+func NewLogRequestsMiddleware(opts ...LogRequestsMiddlewareOpt) func(next http.Handler) http.Handler {
 	// TODO: Blacklist headers
-	// TODO: Headers and query values should not be arrays
 
-	cfg := LogRequestsMiddlewareCfg{
+	cfg := logRequestsMiddlewareCfg{
 		ignorePaths: map[string]bool{},
 	}
-	for _, setupFn := range setup {
-		setupFn(&cfg)
+	cfg.ignorePaths["/v1/healthcheck/ping"] = true
+	for _, opt := range opts {
+		opt(&cfg)
 	}
-	cfg.IgnorePath("/v1/healthcheck/ping")
 	if cfg.logger == nil {
 		cfg.logger = CreateLogger()
 	}
